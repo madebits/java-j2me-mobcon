@@ -1,0 +1,206 @@
+## -*- sgml -*-
+## @param $ejbBundle.ejbs Map(String name => EjbInfo)
+##
+<?xml version="1.0"?>
+<!DOCTYPE ejb-jar PUBLIC
+	  "-//Sun Microsystems, Inc.//DTD Enterprise JavaBeans 2.0//EN"
+	  "http://java.sun.com/dtd/ejb-jar_2_0.dtd">
+
+<ejb-jar>
+
+    <enterprise-beans>
+#foreach( $ejb in $ejbBundle.ejbs )
+        <$ejb.type>
+            <ejb-name>$ejb.name</ejb-name>
+#if( $ejb.remoteView )
+            <home>$ejb.remoteView.home.name</home>
+            <remote>$ejb.remoteView.interface.name</remote>
+#end##if( $ejb.remoteView )
+#if( $ejb.localView )
+            <local-home>$ejb.localView.home.name</local-home>
+            <local>$ejb.localView.interface.name</local>
+#end##if( $ejb.localView )
+            <ejb-class>$ejb.ejbClass.name</ejb-class>
+#if( $ejb.isSession() )
+            <session-type>$ejb.getTagValue("@ejb-session-type","Stateless")</session-type>
+            <transaction-type>$ejb.getTagValue("@ejb-transaction-type","Container")</transaction-type>
+#end##isSession
+#if( $ejb.isMessageDriven() )
+            <transaction-type>$ejb.getTagValue("@ejb-transaction-type","Container")</transaction-type>
+            <!--( TODO: message-selector? )-->
+            <!--( TODO: acknowledge-mode? )-->
+            <message-driven-destination>
+                <destination-type>$ejb.getTagValue("@ejb-mdb-dest-type","javax.jms.Queue")</destination-type>
+#if( $ejb.getTagValue("@ejb-mdb-durability") )
+ 	        <subscription-durability>$ejb.getTagValue("@ejb-mdb-durability")</subscription-durability>
+#end
+           </message-driven-destination>
+#end##isMessageDriven
+#if( $ejb.isEntity() )
+            <persistence-type>$ejb.getTagValue("@ejb-persistence-type","Container")</persistence-type>
+            <prim-key-class>$ejb.primaryKey.name</prim-key-class>
+            <reentrant>$ejb.getTagValue("@ejb-reentrant","False")</reentrant>
+            <abstract-schema-name>$ejb.cmpSchemaName</abstract-schema-name>
+#foreach( $field in $ejb.cmpFields )
+            <cmp-field><field-name>$field.name</field-name></cmp-field>
+#end##cmpFields
+#if( $ejb.isCmpEntity() )
+#if( $ejb.primaryKey.name.startsWith("java.lang.") )
+#foreach( $pkField in $ejb.primaryKeyFields )
+            <primkey-field>$pkField.name</primkey-field>
+#end##foreach( $pkField )
+#end
+#end##if( $ejb.isCmpEntity() )
+#end##if( $ejb.isEntity() )
+#foreach( $envEntry in $ejb.getTags("@ejb-env-entry") )
+            <env-entry>
+                <env-entry-name>$envEntry.getWord(0)</env-entry-name>
+                <env-entry-type>$envEntry.getWord(1)</env-entry-type>
+                <env-entry-value>$envEntry.getWord(2)</env-entry-value>
+            </env-entry>
+#end##foreach( $envEntry )
+#foreach( $ejbRef in $ejb.getTags("@ejb-ref") )
+            <ejb-ref>
+                <ejb-ref-name>$ejbRef.getWord(0)</ejb-ref-name>
+#if( $ejbBundle.getEjb( "$ejbRef.getWord(1)" ) )
+#set( $otherEjb = $ejbBundle.getEjb( "$ejbRef.getWord(1)" ))
+                <ejb-ref-type>$StringUtils.capitalizeFirstLetter( $otherEjb.type )</ejb-ref-type>
+                <home>$otherEjb.remoteView.home.name</home>
+                <remote>$otherEjb.remoteView.interface.name</remote>
+                <ejb-link>$otherEjb.name</ejb-link>
+#else
+                <!-- unable to resolve resource reference (@ejb-ref) to "$ejbRef.getWord(1)" -->
+#end##if
+            </ejb-ref>
+#end##foreach( $ejbRef )
+#foreach( $ejbRef in $ejb.getTags("@ejb-local-ref") )
+            <ejb-local-ref>
+                <ejb-ref-name>$ejbRef.getWord(0)</ejb-ref-name>
+#if( $ejbBundle.getEjb( "$ejbRef.getWord(1)" ) )
+#set( $otherEjb = $ejbBundle.getEjb( "$ejbRef.getWord(1)" ))
+                <ejb-ref-type>$StringUtils.capitalizeFirstLetter( $otherEjb.type )</ejb-ref-type>
+                <local-home>$otherEjb.localView.home.name</local-home>
+                <local>$otherEjb.localView.interface.name</local>
+                <ejb-link>$otherEjb.name</ejb-link>
+#else
+                <!-- unable to resolve resource reference (@ejb-ref) to "$ejbRef.getWord(1)" -->
+#end##if
+            </ejb-local-ref>
+#end##foreach( $ejbRef )
+## TODO security-role-ref
+## TODO security-identity
+#foreach( $resRef in $ejb.getTags("@ejb-resource-ref") )
+            <resource-ref>
+                <res-ref-name>$resRef.getWord(0)</res-ref-name>
+                <res-type>$resRef.getWord(1)</res-type>
+                <res-auth>$resRef.getWord(2)</res-auth>
+            </resource-ref>
+#end##foreach( $resRef )
+## TODO resource-env-ref
+#if( $ejb.isCmpEntity() )
+#foreach( $method in $ejb.queryMethods )
+#if( $method.name != "findByPrimaryKey" )
+            <query>
+                <query-method>
+                    <method-name>$method.name</method-name>
+                    <method-params>
+#foreach( $param in $method.parameters )
+                        <method-param>$param.type</method-param>
+#end##foreach( param )
+                    </method-params>
+                </query-method>
+                <ejb-ql><![CDATA[$method.getTagValue("@ejb-cmp-query")]]></ejb-ql>
+            </query>
+#end##if( $method.name != "findByPrimaryKey" )
+#end##foreach( $method in $ejb.queryMethods )
+#end##if( $ejb.isCmpEntity() )
+        </$ejb.type>
+#end##foreach( $ejb )
+    </enterprise-beans>
+
+#if( $ejbBundle.relations.size() == 0 )
+    <!-- no containger-managed relationships -->
+#else
+    <relationships>
+#foreach( $relation in $ejbBundle.relations )
+        <ejb-relation>
+            <ejb-relation-name>$relation.name</ejb-relation-name>
+#foreach( $role in $relation.roles )
+            <ejb-relationship-role>
+                <ejb-relationship-role-name>$role.name</ejb-relationship-role-name>
+                <multiplicity>$role.multiplicity</multiplicity>
+                <!--( TODO: cascade-delete? )-->
+                <relationship-role-source>
+                    <ejb-name>$role.ejb.name</ejb-name>
+                </relationship-role-source>
+#if( $role.fieldName )
+                <cmr-field>
+                    <cmr-field-name>$role.fieldName</cmr-field-name>
+#if( $role.fieldType )
+                    <cmr-field-type>$role.fieldType</cmr-field-type>
+#end
+                </cmr-field>
+#end##if( $role.fieldName )
+            </ejb-relationship-role>
+#end##foreach( $role in $relation.roles )
+        </ejb-relation>
+#end##foreach( $relation in $ejbBundle.relations )
+    </relationships>
+#end##if( $ejbBundle.relations.size() == 0 )
+
+    <assembly-descriptor>
+
+#if( $ejbBundle.securityRoles.size() == 0 )
+        <!-- "security.roles" property is not defined -->
+#end
+#foreach( $role in $ejbBundle.securityRoles )
+        <security-role>
+            <role-name>$role</role-name>
+        </security-role>
+#end##foreach( $role )
+
+#foreach( $ejb in $ejbBundle.ejbs )
+#if( $ejb.getTags( "@ejb-permission" ).size() > 0 )
+        <method-permission>
+#foreach( $permTag in $ejb.getTags( "@ejb-permission" ))
+            <role-name>$permTag</role-name>
+#end##foreach( $permTag )
+            <method>
+                <ejb-name>$ejb.name</ejb-name>
+                <method-name>*</method-name>
+            </method>
+        </method-permission>
+#else
+        <!-- no default @ejb-permission for $ejb.name -->
+#end##if( $ejb.getTags( "@ejb-permission" ))
+#foreach( $method in $ejb.remoteView.interface.methods )
+#parse( "$templateRoot/ejb-jar-method-permission.vm" )
+#end##foreach( $method )
+#foreach( $method in $ejb.remoteView.home.methods )
+#parse( "$templateRoot/ejb-jar-method-permission.vm" )
+#end##foreach( $method )
+#end##foreach( $ejb )
+
+#foreach( $ejb in $ejbBundle.ejbs )
+#if( $ejb.getTagValue( "@ejb-transaction" ))
+        <container-transaction>
+            <method>
+                <ejb-name>$ejb.name</ejb-name>
+                <method-name>*</method-name>
+            </method>
+            <trans-attribute>$ejb.getTagValue( "@ejb-transaction", "Required" )</trans-attribute>
+        </container-transaction>
+#else
+        <!-- no default @ejb-transaction for $ejb.name -->
+#end##if( "@ejb-transaction" )
+#foreach( $method in $ejb.remoteView.interface.methods )
+#parse( "$templateRoot/ejb-jar-method-transaction.vm" )
+#end##foreach( $method )
+#foreach( $method in $ejb.remoteView.home.methods )
+#parse( "$templateRoot/ejb-jar-method-transaction.vm" )
+#end##foreach( $method )
+#end##foreach ejb
+
+    </assembly-descriptor>
+
+</ejb-jar>

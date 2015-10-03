@@ -1,0 +1,7 @@
+## @param $ejbBundle EjbBundle
+##
+#if( "$ejbBundle.ejbVersion" == "1.1" )
+#parse( "$templateRoot/weblogic/weblogic-cmp-rdbms-jar-11.vm" )
+#else
+#parse( "$templateRoot/weblogic/weblogic-cmp-rdbms-jar-20.vm" )
+#end

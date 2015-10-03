@@ -1,0 +1,26 @@
+# @changedMethods =
+# - void retrieve()
+# - void retrieveObject( String id,  Storeable sa)
+# - void store()
+# - String storeObject( Storeable sa)
+# Send data is encrypted/decrypted. Encryption/decyption is all done
+# on mobile-side
+
+# @addedMethods =
+# - private byte[] decrypt( byte[] in)
+# Encrypts byte-array and returns the encrypted byte-array 
+# - private byte[] encrypt( byte[] in)
+# Decrypts byte-array and returns the decrypted byte-array  
+
+# @description =
+# Alogrithm, that is used to encrypt/decrypt is provided from BouncyCastle
+
+PREFIX = @enc
+
+
+# @classTag =
+# @effects =
+# Adds all the encryption-logic (changes) to the methods. If not set, only
+# the encrypt/decrypt-methods are added to class
+# @parameter =
+encrypt = encrypt

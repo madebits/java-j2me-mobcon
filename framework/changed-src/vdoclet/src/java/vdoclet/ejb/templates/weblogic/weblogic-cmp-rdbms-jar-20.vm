@@ -1,0 +1,75 @@
+## -*- sgml -*-
+## @param EjbBundle $ejbBundle
+##
+<?xml version="1.0"?>
+<!DOCTYPE weblogic-rdbms-jar PUBLIC
+          "-//BEA Systems, Inc.//DTD WebLogic 6.0.0 EJB RDBMS Persistence//EN" 
+          "http://www.bea.com/servers/wls600/dtd/weblogic-rdbms20-persistence-600.dtd">
+
+<weblogic-rdbms-jar>
+#foreach( $ejb in $ejbBundle.ejbs )
+#if( $ejb.isCmpEntity() )
+    <weblogic-rdbms-bean>
+        <ejb-name>$ejb.name</ejb-name>
+        <data-source-name>$ejbBundle.getProperty("datasource")</data-source-name>
+        <table-name>$ejb.getTagValue("@ejb-cmp-table")</table-name>
+#foreach( $field in $ejb.cmpFields )
+        <field-map>
+            <cmp-field>$field.name</cmp-field>
+            <dbms-column>$field.getTagValue("@ejb-cmp-column")</dbms-column>
+        </field-map>
+#end##foreach( $field in $ejb.cmpFields )
+        <!--( TODO: field-group* )-->
+#foreach( $method in $ejb.queryMethods )
+#if( $method.name != "findByPrimaryKey" )
+#if( $method.getTagValue("@weblogic-cmp-query") )
+        <weblogic-query>
+            <query-method>
+                <method-name>$method.name</method-name>
+                <method-params>
+#foreach( $param in $method.parameters )
+                    <method-param>$param.type</method-param>
+#end##foreach( param )
+                </method-params>
+            </query-method>
+            <weblogic-ql><![CDATA[$ejb.getTagValue("@weblogic-cmp-query")]]></weblogic-ql>
+        </weblogic-query>
+#end##if( "@weblogic-cmp-query" )
+#end##if( $method.name != "findByPrimaryKey" )
+#end##foreach( $method in $ejb.queryMethods )
+        <!--( TODO: delay-database-insert-until? )-->
+        <!--( TODO: automatic-key-generation? )-->
+    </weblogic-rdbms-bean>
+#end##if( isCmpEntity() )
+#end##foreach ejb
+#foreach( $relation in $ejbBundle.relations )
+    <weblogic-rdbms-relation>
+        <relation-name>$relation.name</relation-name>
+#if( $relation.roles.get(0).getTagValue("@ejb-cmr-table") )
+        <table-name>$relation.roles.get(0).getTagValue("@ejb-cmr-table")</table-name>
+#else
+#if( $relation.roles.get(1).getTagValue("@ejb-cmr-table") )
+        <table-name>$relation.roles.get(1).getTagValue("@ejb-cmr-table")</table-name>
+#end
+#end
+#foreach( $role in $relation.roles )
+        <weblogic-relationship-role>
+            <relationship-role-name>$role.name</relationship-role-name>
+            <!--( TODO: group-name? )-->
+#if( "$role.multiplicity" == "Many" )
+            <column-map>
+                <foreign-key-column>$role.getTagValue("@ejb-cmr-column")</foreign-key-column>
+#if( $role.getTagValue("@ejb-cmr-target-column") )
+                <key-column>$role.getTagValue("@ejb-cmr-target-column")</key-column>
+#end
+            </column-map>
+#end##if( "$role.multiplicity" == "MANY" )
+            <!--( TODO: db-cascade-delete? )-->
+        </weblogic-relationship-role>
+#end##foreach( $role in $relation.roles )
+    </weblogic-rdbms-relation>
+#end##foreach( $relation in $ejbBundle.relations )
+
+    <!--( TODO: create-default-dbms-tables? )-->
+    <!--( TODO: validate-db-schema-with? )-->
+</weblogic-rdbms-jar>

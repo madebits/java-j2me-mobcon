@@ -1,0 +1,36 @@
+## -*- sgml -*-
+## @param $ejb EjbInfo
+##
+        <stateful-session-descriptor>
+            <stateful-session-cache>
+                <!-- @weblogic-cache-max -->
+                <max-beans-in-cache>$ejb.getTagValue("@weblogic-cache-max","100")</max-beans-in-cache>
+                <!-- @weblogic-cache-idle-timeout -->
+                <idle-timeout-seconds>$ejb.getTagValue("@weblogic-cache-idle-timeout","600")</idle-timeout-seconds>
+                <!-- @weblogic-cache-read-timeout -->
+                <read-timeout-seconds>$ejb.getTagValue("@weblogic-cache-read-timeout","0")</read-timeout-seconds>
+            </stateful-session-cache>
+            <lifecycle>
+                <!-- @weblogic-passivation-strategy -->
+                <passivation-strategy>$ejb.getTagValue("@weblogic-passivation-strategy","default")</passivation-strategy>
+            </lifecycle>
+            <!-- @weblogic-persistent-store-dir -->
+#if( $ejb.getTagValue("@weblogic-persistent-store-dir") )
+            <persistent-store-dir>$ejb.getTagValue("@weblogic-persistent-store-dir")</persistent-store-dir>
+#end
+            <stateful-session-clustering>
+                <!-- @weblogic-clusterable -->
+                <home-is-clusterable>$ejb.getTagValue("@weblogic-clusterable","true")</home-is-clusterable>
+                <!-- @weblogic-cluster-load-algorithm -->
+#if( $ejb.getTagValue("@weblogic-cluster-load-algorithm") )
+                <home-load-algorithm>$ejb.getTagValue("@weblogic-cluster-load-algorithm")</home-load-algorithm>
+#end
+                <!-- @weblogic-cluster-call-router -->
+#if( $ejb.getTagValue("@weblogic-cluster-call-router") )
+                <home-call-router-class-name>$ejb.getTagValue("@weblogic-cluster-call-router")</home-call-router-class-name>
+                <!-- @weblogic-stateful-replication-type -->
+                <replication-type>$ejb.getTagValue("@weblogic-stateful-replication-type","None")</replication-type>
+            </stateful-session-clustering>
+            <!-- @weblogic-stateful-allow-concurrent -->
+            <allow-concurrent-calls>$ejb.getTagValue("@weblogic-stateful-allow-concurrent","false")</allow-concurrent-calls>
+        </stateful-session-descriptor>

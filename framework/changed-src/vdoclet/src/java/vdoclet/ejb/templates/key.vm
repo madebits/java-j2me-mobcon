@@ -1,0 +1,78 @@
+## -*- java -*-
+## @param $ejb EjbInfo
+##
+package ${ejb.primaryKey.package};
+
+/**
+ * Generated from $ejb.srcClass.name by vDoclet/EJB
+ */
+public class ${ejb.primaryKey.shortName} implements java.io.Serializable {
+#if( $ejb.getTagValue("@ejb-key-serialVersionUID") )
+
+    static final long serialVersionUID = $ejb.getTagValue("@ejb-key-serialVersionUID");
+#end
+
+    //---( Fields )---
+#foreach( $field in $ejb.primaryKey.fields )
+
+    public $field.type $field.name;
+#end
+
+    //---( Constructors )---
+
+    public ${ejb.primaryKey.shortName}() {
+    }
+
+    public ${ejb.primaryKey.shortName}( ${ejb.primaryKey.fields} ) {
+#foreach( $field in $ejb.primaryKey.fields )
+        this.${field.name} = ${field.name};
+#end
+    }
+
+    //---( Field access )---
+#foreach( $field in $ejb.primaryKey.fields )
+
+    public $field.type ${field.getter.name}() {
+        return this.${field.name};
+    }
+#end
+
+    //---( Equality )---
+
+    public boolean equals( Object o ) {
+        if( !(o instanceof ${ejb.primaryKey.shortName})) return false;
+        ${ejb.primaryKey.shortName} other = (${ejb.primaryKey.shortName})o;
+        boolean eq = true;
+#foreach( $field in $ejb.primaryKey.fields )
+#if ($field.type.indexOf('.') == -1)
+        eq = eq && (this.${field.name} == other.${field.name});
+#else
+        eq = eq && (this.${field.name}.equals( other.${field.name} ));
+#end
+#end
+        return eq;
+    }
+
+    public int hashCode() {
+        int hashCode = 0;
+#foreach( $field in $ejb.primaryKey.fields )
+#if ($field.type.indexOf('.') == -1)
+        hashCode += (int)this.${field.name};
+#else
+        hashCode += (int)this.${field.name}.hashCode();
+#end
+#end
+        return hashCode;
+    }
+
+    //---( toString )---
+
+    public String toString() {
+        return ("[${ejb.primaryKey.shortName}" +
+#foreach( $field in $ejb.primaryKey.fields )
+                "/${field.name}=" + this.${field.name} +
+#end
+                "]");
+    }
+
+}

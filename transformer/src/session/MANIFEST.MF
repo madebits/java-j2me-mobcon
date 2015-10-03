@@ -1,0 +1,13 @@
+Manifest-Version: 1.0
+
+name: Transformer
+Transformer-Name: Session
+TID: 04
+IID: 01
+File-Name: session.vm
+Tag-File: session.tag
+Server-File: SessionTrans
+
+name: Dependencies
+Use-Before: 02.01
+Use-After: 

@@ -1,0 +1,2 @@
+  #bundleGenerate( "weblogic/weblogic-ejb-jar.vm" "META-INF/weblogic-ejb-jar.xml" )
+  #bundleGenerate( "weblogic/weblogic-cmp-rdbms-jar.vm" "META-INF/weblogic-cmp-rdbms-jar.xml" )

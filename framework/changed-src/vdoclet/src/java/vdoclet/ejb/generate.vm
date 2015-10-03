@@ -1,0 +1,35 @@
+## @param $vdoclet Generator
+## @param $docInfo DocInfo
+##
+##---( Set-up context )---
+##
+#set( $StringUtils = $vdoclet.makeBean("org.apache.velocity.util.StringUtils") )
+#set( $EjbUtils = $vdoclet.makeBean("vdoclet.ejb.EjbUtils") )
+##
+#set( $ejbBundle = $EjbUtils.getEjbBundle($docInfo) )
+#set( $templateRoot = "vdoclet/ejb/templates" )
+##
+##---( Macros )---
+##
+#macro( generate $template $fileName )
+$fileName ... ##
+$vdoclet.eval( "$templateRoot/$template", "$fileName" )##
+done
+#end
+##
+#macro( bundleGenerate $template $file )
+#generate( $template $file )
+#end##macro( bundleGenerate )
+##
+#macro( classGenerate $desc $template $class )
+#if( $class )
+#set( $javaFileName = "${StringUtils.sub($class.name,'.','/')}.java" )
+$!{desc}#generate( $template $javaFileName )
+#end
+#end##macro( classGenerate )
+##
+##---( Run the different template-sets )---
+##
+#parse( "$templateRoot/generate.vm" )
+#parse( "$templateRoot/jboss/generate.vm" )
+#parse( "$templateRoot/weblogic/generate.vm" )

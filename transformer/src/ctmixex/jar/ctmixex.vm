@@ -1,0 +1,48 @@
+## @param vdoclet.docinfo.DocInfo $docInfo
+## @param vdoclet.Generator $vdoclet
+## @param ClassTemplate $CT from Control.vm
+## $docInfo is Class vdoclet.docinfo.DocInfo $docInfo
+## $vdoclet is Class vdoclet.Generator
+##
+#set($StringUtils = $vdoclet.makeBean("org.apache.velocity.util.StringUtils"))
+#set($varMap = $vdoclet.makeBean("java.util.Hashtable"))
+#set($storeVec = $vdoclet.makeBean("java.util.Vector"))
+#set($st = '"')
+##
+#****** Initialize the Dictionary ******#
+#set($tagDic = $transformer.getTagDic())
+
+##If the concern-tag (here @scr) is set, parse the file
+#set($tag = false)
+#set($tag = $class.getTag("$tagDic.getPrefix()"))
+#if ($tag)
+
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("Display")
+  $FT.setName("disp")
+  $CT.addField($FT, $tagDic.getPrefix())
+
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("doSomething")
+  $MT.addBegin("System.out.println(${st}MixEx: ${st}+((Screen)disp.getCurrent()).getTitle());")
+  $CT.addMethod($MT, $tagDic.getPrefix())
+
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("commandAction")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("Command")
+  $FT.setName("command")
+  $MT.addParameter($FT)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("Displayable")
+  $FT.setName("screen")
+  $MT.addParameter($FT)
+  $MT.addBegin("doSomething();")
+  $CT.addMethod($MT, $tagDic.getPrefix())
+
+## End concern-tag
+#end

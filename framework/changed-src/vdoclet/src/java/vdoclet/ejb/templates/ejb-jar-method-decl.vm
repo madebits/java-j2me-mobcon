@@ -1,0 +1,10 @@
+## -*- sgml -*-
+            <method>
+                <ejb-name>$ejb.name</ejb-name>
+                <method-name>$method.name</method-name>
+                <method-params>
+#foreach( $param in $method.parameters )
+                    <method-param>$param.type</method-param>
+#end##foreach( $param )
+                </method-params>
+            </method>

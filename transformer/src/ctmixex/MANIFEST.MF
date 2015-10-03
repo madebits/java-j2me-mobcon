@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+
+name: Transformer
+Transformer-Name: CT-AST Mixing Example
+TID: 07
+IID: 01
+File-Name: ctmixex.vm
+Tag-File: ctmixex.tag
+
+name: Dependencies
+Use-Before: 
+Use-After: 

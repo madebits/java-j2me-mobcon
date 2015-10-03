@@ -1,0 +1,25 @@
+## -*- sgml -*-
+## @param $ejb EjbInfo
+##
+        <stateless-session-descriptor>
+            <pool>
+                <!-- @weblogic-session-pool-max -->
+                <max-beans-in-free-pool>$ejb.getTagValue("@weblogic-session-pool-max","1000")</max-beans-in-free-pool>
+                <!-- @weblogic-session-pool-initial -->
+                <initial-beans-in-free-pool>$ejb.getTagValue("@weblogic-session-pool-initial","0")</initial-beans-in-free-pool>
+            </pool>
+            <stateless-clustering>
+                <!-- @weblogic-clusterable -->
+                <stateless-bean-is-clusterable>$ejb.getTagValue("@weblogic-clusterable","true")</stateless-bean-is-clusterable>
+                <!-- @weblogic-cluster-load-algorithm -->
+#if( $ejb.getTagValue("@weblogic-cluster-load-algorithm") )
+                <stateless-bean-load-algorithm>$ejb.getTagValue("@weblogic-cluster-load-algorithm")</stateless-bean-load-algorithm>
+#end
+                <!-- @weblogic-cluster-call-router -->
+#if( $ejb.getTagValue("@weblogic-cluster-call-router") )
+                <stateless-bean-call-router-class-name>$ejb.getTagValue("@weblogic-cluster-call-router")</stateless-bean-call-router-class-name>
+#end
+                <!-- @weblogic-cluster-idempotent -->
+                <stateless-bean-methods-are-idempotent>$ejb.getTagValue("@weblogic-cluster-idempotent","false")</stateless-bean-methods-are-idempotent>
+             </stateless-clustering>
+        </stateless-session-descriptor>

@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+
+<!-- It is supposed that the merger will be 
+applied to the transformer that follows in the group 
+or, when it is a group merger, to the group that follows
+The merger-class must be reachable over the classpath. -->
+
+<flow>
+    <group>
+        <transformer>
+            <name>Screen</name>
+            <tid>02</tid>
+            <iid>01</iid>    
+            <merger>
+                <class>MixTemplateExample</class>            
+            </merger>
+        </transformer>
+        <transformer>
+            <name>Mix Example</name>
+            <tid>07</tid>
+            <iid>01</iid>
+        </transformer>      
+    </group>
+
+    <group>
+        <transformer>
+            <name>Logging</name>
+            <tid>05</tid>
+            <iid>01</iid>
+        </transformer>
+    </group>    
+</flow>

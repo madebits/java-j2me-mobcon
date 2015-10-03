@@ -1,0 +1,1057 @@
+#************************#
+#******** FIELDS ********#
+#************************#
+#set($StringUtils = $vdoclet.makeBean("org.apache.velocity.util.StringUtils"))
+#set($varMap = $vdoclet.makeBean("java.util.Hashtable"))
+#set($valVec = $vdoclet.makeBean("java.util.Vector"))
+#set($displayVec = $vdoclet.makeBean("java.util.Vector"))
+#set($storeVec = $vdoclet.makeBean("java.util.Vector"))
+#set($commandVec = $vdoclet.makeBean("java.util.Vector"))
+#set($commandLabels = $vdoclet.makeBean("java.util.Hashtable"))
+#set($st = '"')
+##
+#****** Initialize the Dictionary ******#
+#set($tagDic = $transformer.getTagDic())
+
+##If the concern-tag (here @scr) is set, parse the file
+#set($tag = false)
+#set($tag = $class.getTag("$tagDic.getPrefix()"))
+#if ($tag)
+
+
+#************************#
+#******** MACROS ********#
+#************************#
+##
+##
+#****** Macro scr_gen_constructor******
+# Function: Generates the Constructor
+*#
+#macro(scr_gen_constructor $class)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setName("${MAINCT.getName()}")
+  $MT.addEnd("display = Display.getDisplay(this);")
+
+  #if ($varMap.get("exitButton")=="1")
+    $MT.addBody("exitCommand = new Command(${st}Exit${st}, Command.EXIT, 1);")
+  #end
+  #if ($varMap.get("nextButton")=="1")
+    $MT.addBody("nextCommand = new Command(${st}Next${st}, Command.SCREEN, 1);")
+  #end
+  #if ($varMap.get("backButton")=="1")
+    $MT.addBody("backCommand = new Command(${st}Back${st}, Command.BACK, 1);")
+  #end
+
+  $CT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro scr_change_startApp******
+# Function: Changes startApp and adds a field firstForm
+*#
+#macro(scr_change_startApp)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setAccess("protected")
+  $FT.setType("String")
+  $FT.setName("firstForm")
+  #set($tmpName = $varMap.get("firstForm"))
+  $FT.setValue("${st}$tmpName${st}")
+  $CT.addField($FT, $tagDic.getPrefix())
+
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("startApp")
+  $MT.addEnd("viewDisplay(firstForm);")
+  $CT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro scr_gen_Form ******
+# Function:
+# -
+*#
+#macro(scr_gen_Form $field)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setAccess("$field.getModifiers()")
+  $FT.setType("Form")
+  $FT.setName("$field.name")
+  $CT.addField($FT, $tagDic.getPrefix())
+
+  $formVector.add($field.name)
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("backButton")))
+  #if ($tag && ($varMap.get("backButton")=="0"))
+    #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+    $FT.setAccess("protected")
+    $FT.setType("Command")
+    $FT.setName("backCommand")
+    $CT.addField($FT, $tagDic.getPrefix())
+    $varMap.put("backButton", "1")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("nextButton")))
+  #if ($tag && ($varMap.get("nextButton")=="0"))
+    #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+    $FT.setAccess("protected")
+    $FT.setType("Command")
+    $FT.setName("nextCommand")
+    $CT.addField($FT, $tagDic.getPrefix())
+    $varMap.put("nextButton", "1")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("exitButton")))
+  #if ($tag && ($varMap.get("exitButton")=="0"))
+    #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+    $FT.setAccess("protected")
+    $FT.setType("Command")
+    $FT.setName("exitCommand")
+    $CT.addField($FT, $tagDic.getPrefix())
+    $varMap.put("exitButton", "1")
+  #end
+#end
+
+
+##
+##
+#****** Macro scr_gen_FormInit ******
+# Function:
+# - Generates the call-methods for forms
+*#
+#macro(scr_gen_FormInit $field)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("call$StringUtils.capitalizeFirstLetter($field.name)")
+  #set($tag = $field.getTag($tagDic.getTag("label")))
+  ##$MT.addBody("context.put(${st}lastDisplay${st},${st}$field.name${st});");
+  $MT.addBody("$field.name = new Form($tag.value);")
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("exitButton")))
+  #if ($tag)
+    $MT.addBody("${field.name}.addCommand(exitCommand);")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("nextButton")))
+  #if ($tag)
+    $MT.addBody("${field.name}.addCommand(nextCommand);")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("backButton")))
+  #if ($tag)
+    $MT.addBody("${field.name}.addCommand(backCommand);")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("command")))
+  #if($tag)
+    #set($CommandArray = $StringUtils.split($tag.value, " "))
+    #foreach($commandName in $CommandArray)
+      #set($label = $commandLabels.get("$commandName"))
+      $MT.addBody("$commandName = new Command($label, Command.ITEM, 1);")
+      $MT.addBody("${field.name}.addCommand($commandName);")
+    #end
+  #end
+
+  $MT.addBody("${field.name}.setCommandListener(this);")
+
+#foreach($tag in $field.getTags())
+  #if ($tag.name == $tagDic.getTag("textField"))
+    #set($Array = $StringUtils.split($tag.value, " "))
+    #foreach($element in $Array)
+      $MT.addBody("call$StringUtils.capitalizeFirstLetter($element)();")
+      $MT.addBody("${field.name}.append($element);")
+    #end
+  #end
+
+  #if ($tag.name == $tagDic.getTag("image"))
+    $MT.addBody("call$StringUtils.capitalizeFirstLetter($tag.value)();")
+    $MT.addBody("${field.name}.append($tag.value);")
+  #end
+
+  #if ($tag.name == $tagDic.getTag("stringItem"))
+    $MT.addBody("call$StringUtils.capitalizeFirstLetter($tag.value)();")
+    $MT.addBody("${field.name}.append($tag.value);")
+  #end
+
+  #if ($tag.name == $tagDic.getTag("imageItem"))
+    $MT.addBody("call$StringUtils.capitalizeFirstLetter($tag.value)();")
+    $MT.addBody("${field.name}.append($tag.value);")
+  #end
+
+  #if ($tag.name == $tagDic.getTag("choiceGroup"))
+    $MT.addBody("call$StringUtils.capitalizeFirstLetter($tag.value)();")
+    $MT.addBody("${field.name}.append($tag.value);")
+    $MT.addBody("selectCommand$StringUtils.capitalizeFirstLetter($tag.value) = new Command(${st}Select${st}, Command.ITEM, 1);")
+    $MT.addBody("${field.name}.addCommand(selectCommand$StringUtils.capitalizeFirstLetter($tag.value));");
+  #end
+#end
+
+  $MT.addBody("display.setCurrent(${field.name});")
+  $CT.addMethod($MT, $tagDic.getPrefix())
+
+#end
+
+
+##
+##
+#****** Macro scr_gen_addItem ******
+# Function:
+# -
+*#
+#macro(scr_gen_addItem $field $tag $MT)
+  $MT.addBody("call$StringUtils.capitalizeFirstLetter($tag.value)();")
+  $MT.addBody("${field.name}.append($tag.value);")
+#end
+
+
+##
+##
+#****** Macro scr_gen_addItemArray ******
+# Function:
+# -
+*#
+#macro(scr_gen_addItemArray $field $tag $MT)
+  #set($Array = $StringUtils.split($tag.value, " "))
+  #foreach($element in $Array)
+    $MT.addBody("call$StringUtils.capitalizeFirstLetter($element)();")
+    $MT.addBody("${field.name}.append($element);")
+  #end
+#end
+
+
+##
+##
+#****** Macro scr_gen_List ******
+# Function:
+# -
+*#
+#macro(scr_gen_List $field)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setAccess("$field.getModifiers()")
+  $FT.setType("List")
+  $FT.setName("$field.name")
+  $CT.addField($FT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro scr_gen_ListInit ******
+# Function:
+# - Generates the call-methods for lists
+*#
+#macro(scr_gen_ListInit $field)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("call$StringUtils.capitalizeFirstLetter($field.name)")
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("listElements")))
+  #if ($tag)
+    #set($LEArray = $StringUtils.split($tag.value, " "))
+    #set($cnt = 0)
+    #foreach($listElement in $LEArray)
+      $MT.addBody("listElements[$cnt] = $listElement;")
+      #set($cnt = $cnt+1)
+    #end
+    $MT.addBegin("listElements = new String[$cnt];")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("listElementArray")))
+  #if ($tag)
+    $MT.addBody("listElements = $tag.value;")
+  #end
+
+  #set($label = $field.getTag($tagDic.getTag("label")))
+  #set($listType = $field.getTag($tagDic.getTag("listType")))
+  $MT.addBody("$field.name = new List($label.value, ${listType}, listElements, null);")
+  $MT.addBody("display.setCurrent(${field.name});")
+  $CT.addMethod($MT, $tagDic.getPrefix())
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("commandAction")))
+  #if ($tag)
+    #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+    $FT.setAccess("protected")
+    $FT.setType("Command")
+    $FT.setName("selectCommand$StringUtils.capitalizeFirstLetter($field.name)")
+    $CT.addField($FT, $tagDic.getPrefix())
+    $MT.addBody("selectCommand$StringUtils.capitalizeFirstLetter($field.name) = new Command(${st}Select${st}, Command.ITEM, 1);")
+    #if($listType.value == "List.IMPLICIT")
+      $MT.addBody("${field.name}.setSelectCommand(selectCommand$StringUtils.capitalizeFirstLetter($field.name));")
+    #elseif($listType.value == "List.EXCLUSIVE")
+      $MT.addBody("${field.name}.addCommand(selectCommand$StringUtils.capitalizeFirstLetter($field.name));")
+    #end
+    $MT.addBody("${field.name}.setCommandListener(this);")
+
+    $COMMANDACTION.addBody("if (command == selectCommand$StringUtils.capitalizeFirstLetter($field.name))")
+    $COMMANDACTION.addBody("{")
+    $COMMANDACTION.addBody("${tag.value}($field.name);")
+    $COMMANDACTION.addBody("}")
+
+    #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+    $MT.setAccess("public")
+    $MT.setAbstract(true)
+    $MT.setType("void")
+    $MT.setName("${tag.value}")
+    #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+    $FT.setType("List")
+    $FT.setName("list")
+    $MT.addParameter($FT)
+    $CT.addMethod($MT, $tagDic.getPrefix())
+  #end
+#end
+
+
+##
+##
+#****** Macro scr_gen_Alert ******
+# Function:
+# -
+*#
+#macro(scr_gen_Alert $field)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setAccess("$field.getModifiers()")
+  $FT.setType("Alert")
+  $FT.setName("$field.name")
+  $CT.addField($FT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro scr_gen_AlertInit ******
+# Function:
+# - Generates the call-methods for alerts
+*#
+#macro(scr_gen_AlertInit $field)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("call$StringUtils.capitalizeFirstLetter($field.name)")
+  #set($tag = $field.getTag($tagDic.getTag("label")))
+  #set($label = $tag.value)
+  $MT.addBody("$field.name = new Alert($tag.value);")
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("alertText")))
+  #if ($tag)
+    $MT.addBody("${field.name}.setString($tag.value);")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("alertType")))
+  #if ($tag)
+    $MT.addBody("${field.name}.setType(AlertType.$tag.value);")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("alertTimeout")))
+  #if ($tag)
+    $MT.addBody("${field.name}.setTimeout($tag.value);")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("alertImage")))
+  #if ($tag)
+    $MT.addBody("call$StringUtils.capitalizeFirstLetter($tag.value)();")
+    $MT.addBody("${field.name}.setImage($tag.value);")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("alertNextScreen")))
+  #if ($tag)
+    #set($nextScreen = $tag.value)
+    $MT.addBody("${field.name}.setCommandListener(this);")
+  #end
+  $MT.addBody("display.setCurrent(${field.name});")
+  $CT.addMethod($MT, $tagDic.getPrefix())
+
+  $COMMANDACTION.addBody("if (command == Alert.DISMISS_COMMAND){")
+  $COMMANDACTION.addBody("if (((Screen)((Screen)display.getCurrent())).getTitle() == $label)")
+  $COMMANDACTION.addBody("{")
+  $COMMANDACTION.addBody("call$StringUtils.capitalizeFirstLetter($nextScreen)();")
+  $COMMANDACTION.addBody("}")
+  $COMMANDACTION.addBody("}")
+
+#end
+
+
+##
+##
+#****** Macro scr_gen_TextField ******
+# Function:
+# -
+*#
+#macro(scr_gen_TextField $field)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setAccess("$field.getModifiers()")
+  $FT.setType("TextField")
+  $FT.setName("$field.name")
+  $CT.addField($FT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro scr_gen_TextFieldInit ******
+# Function:
+# - Generates the call-methods for TextFields
+*#
+#macro(scr_gen_TextFieldInit $field)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("call$StringUtils.capitalizeFirstLetter($field.name)")
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("label")))
+  #if ($tag)
+    #set($label = $tag)
+  #else
+    #set($label = ${field.name})
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("string")))
+  #if ($tag)
+    #set($string = $tag)
+  #else
+    #set($string = "")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("constraints")))
+  #if ($tag)
+    #set($constraints = $tag.value)
+  #else
+    #set($constraints = "TextField.ANY")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("maxSize")))
+  #if ($tag)
+    #set($maxSize = $tag.value)
+  #else
+    #set($maxSize = "256")
+  #end
+
+  $MT.addBegin("String text = ${st}${st};")
+  $MT.addBody("text = $string;")
+  $MT.addBody("${field.name} = new TextField($label, text, $maxSize, $constraints);")
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("layout")))
+  #if ($tag)
+    $MT.addBody("${field.name}.setLayout($tag.value);")
+  #end
+
+  $CT.addMethod($MT, $tagDic.getPrefix())
+
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("call$StringUtils.capitalizeFirstLetter($field.name)")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("String")
+  $FT.setName("text")
+  $MT.addParameter($FT)
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("label")))
+  #if ($tag)
+    #set($label = $tag)
+  #else
+    #set($label = ${field.name})
+  #end
+
+  $MT.addBody("${field.name} = new TextField($label, text, 256, TextField.ANY);")
+  $CT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro scr_gen_StringItem ******
+# Function:
+# -
+*#
+#macro(scr_gen_StringItem $field)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setAccess("$field.getModifiers()")
+  $FT.setType("StringItem")
+  $FT.setName("$field.name")
+  $CT.addField($FT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro scr_gen_StringItemInit ******
+# Function:
+# - Generates the call-methods for StringItem
+*#
+#macro(scr_gen_StringItemInit $field)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("call$StringUtils.capitalizeFirstLetter($field.name)")
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("label")))
+  #if ($tag)
+    #set($label = $tag)
+  #else
+    #set($label = "${st}${field.name}${st}")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("string")))
+  #if ($tag)
+    #set($string = $tag)
+  #else
+    #set($string = "")
+  #end
+
+  $MT.addBegin("String text = ${st}${st};")
+  $MT.addBody("text = $string;")
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("mode")))
+  #if ($tag)
+    $MT.addBody("${field.name} = new StringItem($label, text, $tag.value);")
+  #else
+    $MT.addBody("${field.name} = new StringItem($label, text);")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("fontFace")))
+  #if ($tag)
+    #set($fontFace = $tag)
+  #else
+    #set($fontFace = "0")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("fontStyle")))
+  #if ($tag)
+    #set($fontStyle = $tag)
+  #else
+    #set($fontStyle = "0")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("fontSize")))
+  #if ($tag)
+    #set($fontSize = $tag)
+  #else
+    #set($fontSize = "0")
+  #end
+
+  $MT.addBody("${field.name}.setFont(Font.getFont($fontFace,$fontStyle,$fontSize));")
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("layout")))
+  #if ($tag)
+    $MT.addBody("${field.name}.setLayout($tag.value);")
+  #end
+
+  #set($height = "Item.getPreferredHeight()")
+  #set($width = "Item.getPreferredWidth()")
+
+  #set($tagH = false)
+  #set($tagH = $field.getTag($tagDic.getTag("height")))
+  #if ($tagH)
+    #set($height = "$tagH.value")
+  #end
+
+  #set($tagW = false)
+  #set($tagW = $field.getTag($tagDic.getTag("width")))
+  #if ($tagW)
+    #set($width = "$tagW.value")
+  #end
+
+  #if ($tagW || $tagH)
+    $MT.addBody("${field.name}.setPreferredSize($width, $height);")
+  #end
+  $CT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro scr_gen_ImageItem ******
+# Function:
+# -
+*#
+#macro(scr_gen_ImageItem $field)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setAccess("$field.getModifiers()")
+  $FT.setType("ImageItem")
+  $FT.setName("$field.name")
+  $CT.addField($FT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro scr_gen_ImageItemInit ******
+# Function:
+# - Generates the call-methods for ImageItem
+*#
+#macro(scr_gen_ImageItemInit $field)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("call$StringUtils.capitalizeFirstLetter($field.name)")
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("label")))
+  #if ($tag)
+    #set($label = $tag)
+  #else
+    #set($label = "${st}${field.name}${st}")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("image")))
+  #if ($tag)
+    #set($image = $tag)
+  #end
+
+  #set($layout = "ImageItem.LAYOUT_CENTER")
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("layout")))
+  #if ($tag)
+    #set($layout = "$tag.value")
+  #end
+
+  $MT.addBody("call$StringUtils.capitalizeFirstLetter($image.value)();")
+
+  #set($altText = "${st}${st}")
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("altText")))
+  #if ($tag)
+    #set($altText = "$tag.value")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("mode")))
+  #if ($tag)
+    $MT.addBody("${field.name} = new ImageItem($label, $image, $layout, $altText, $tag.value);")
+  #else
+    $MT.addBody("${field.name} = new ImageItem($label, $image, $layout, $altText);")
+  #end
+
+  $CT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro scr_gen_ChoiceGroupt ******
+# Function:
+# -
+*#
+#macro(scr_gen_ChoiceGroup $field)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setAccess("$field.getModifiers()")
+  $FT.setType("ChoiceGroup")
+  $FT.setName("$field.name")
+  $CT.addField($FT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro scr_gen_ChoiceGroupInit ******
+# Function:
+# - Generates the call-methods for ChoiceGroups
+*#
+#macro(scr_gen_ChoiceGroupInit $field)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("call$StringUtils.capitalizeFirstLetter($field.name)")
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("listElements")))
+  #if ($tag)
+    #set($LEArray = $StringUtils.split($tag.value, " "))
+    #set($cnt = 0)
+    #foreach($listElement in $LEArray)
+      $MT.addBody("listElements[$cnt] = $listElement;")
+      #set($cnt = $cnt+1)
+    #end
+    $MT.addBegin("listElements = new String[$cnt];")
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("listElementArray")))
+  #if ($tag)
+    $MT.addBody("listElements = $tag.value;")
+  #end
+
+  #set($label = $field.getTag($tagDic.getTag("label")))
+  #set($listType = $field.getTag($tagDic.getTag("listType")))
+  $MT.addBody("$field.name = new ChoiceGroup($label.value, ${listType}, listElements, null);")
+  $CT.addMethod($MT, $tagDic.getPrefix())
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("commandAction")))
+  #if ($tag)
+    #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+    $FT.setAccess("protected")
+    $FT.setType("Command")
+    $FT.setName("selectCommand$StringUtils.capitalizeFirstLetter($field.name)")
+    $CT.addField($FT, $tagDic.getPrefix())
+    ##$MT.addBody("selectCommand$StringUtils.capitalizeFirstLetter($field.name) = new Command(${st}Select${st}, Command.ITEM, 1);")
+    #if($listType.value == "List.IMPLICIT")
+      ##$MT.addBody("${field.name}.setSelectCommand(selectCommand$StringUtils.capitalizeFirstLetter($field.name));")
+    #elseif($listType.value == "List.EXCLUSIVE")
+      ##$MT.addBody("${field.name}.addCommand(selectCommand$StringUtils.capitalizeFirstLetter($field.name));")
+    #end
+    ##$MT.addBody("${field.name}.setCommandListener(this);")
+
+    $COMMANDACTION.addBody("if (command == selectCommand$StringUtils.capitalizeFirstLetter($field.name))")
+    $COMMANDACTION.addBody("{")
+    $COMMANDACTION.addBody("${tag.value}($field.name);")
+    $COMMANDACTION.addBody("}")
+  #end
+#end
+
+
+##
+##
+#****** Macro scr_gen_commandAction ******
+# Function:
+# - Generates the commandAction-methods
+*#
+#macro(scr_gen_commandAction)
+  #if($varMap.get("exitButton")=="1")
+    $COMMANDACTION.addBody("if (command == exitCommand)")
+    $COMMANDACTION.addBody("{")
+    $COMMANDACTION.addBody("destroyApp(false);")
+    $COMMANDACTION.addBody("notifyDestroyed();")
+    $COMMANDACTION.addBody("}")
+  #end
+
+  #if($varMap.get("nextButton")=="1")
+    $COMMANDACTION.addBody("if (command == nextCommand)")
+    $COMMANDACTION.addBody("{")
+    #foreach ($field in $class.fields)
+      #set($tag = false)
+      #set($tag = $field.getTag($tagDic.getTag("nextButton")))
+      #if (($field.getType() == "javax.microedition.lcdui.Form") && $tag)
+        #set($tmpLabel = $field.getTag($tagDic.getTag("label")))
+        $COMMANDACTION.addBody("if (((Screen)display.getCurrent()).getTitle() == $tmpLabel)")
+        $COMMANDACTION.addBody("{")
+        $COMMANDACTION.addBody("call$StringUtils.capitalizeFirstLetter($tag.value)();")
+        $COMMANDACTION.addBody("}")
+      #end
+    #end
+    $COMMANDACTION.addBody("}")
+  #end
+
+  #if($commandVec.size() != 0)
+    #foreach ($command in $commandVec)
+      $COMMANDACTION.addBody("if (command == $command)")
+      $COMMANDACTION.addBody("{")
+      #foreach ($field in $class.fields)
+        #set($tag = false)
+        #set($tag = $field.getTag($tagDic.getTag("command")))
+        #if($tag)
+          #set($CommandArray = $StringUtils.split($tag.value, " "))
+          #foreach($comandName in $CommandArray)
+            #if($comandName == $command)
+              #set($label = $field.getTag($tagDic.getTag("label")))
+              $COMMANDACTION.addBody("if (((Screen)display.getCurrent()).getTitle() == $label)")
+              $COMMANDACTION.addBody("{")
+              $COMMANDACTION.addBody("call$StringUtils.capitalizeFirstLetter(${command})();")
+              $COMMANDACTION.addBody("}")
+            #end
+          #end
+        #end
+      #end
+      $COMMANDACTION.addBody("}")
+      #end
+    #end
+
+
+  #if($varMap.get("backButton")=="1")
+    $COMMANDACTION.addBody("if (command == backCommand)")
+    $COMMANDACTION.addBody("{")
+    #foreach ($field in $class.fields)
+      #set($tag = false)
+      #set($tag = $field.getTag($tagDic.getTag("backButton")))
+      #if (($field.getType() == "javax.microedition.lcdui.Form") && $tag)
+        #set($tmpLabel = $field.getTag($tagDic.getTag("label")))
+        $COMMANDACTION.addBody("if (((Screen)display.getCurrent()).getTitle() == $tmpLabel)")
+        $COMMANDACTION.addBody("{")
+        $COMMANDACTION.addBody("call$StringUtils.capitalizeFirstLetter($tag.value)();")
+        $COMMANDACTION.addBody("}")
+      #end
+    #end
+
+    $COMMANDACTION.addBody("}")
+  #end
+
+#end
+
+
+##
+##
+#****** Macro scr_gen_viewDisplay ******
+# Function:
+# - Generates the scr_gen_viewDisplay-method
+*#
+#macro(scr_gen_viewDisplay)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("viewDisplay")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("String")
+  $FT.setName("displayName")
+  $MT.addParameter($FT)
+
+  #foreach($display in $displayVec)
+    $MT.addBody("if(displayName.equals(${st}$display${st})) call$StringUtils.capitalizeFirstLetter($display)();")
+  #end
+  $CT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+#************************#
+#******* Workflow *******#
+#************************#
+##x-button is 1, if the command-fields are allready set als Class-Fields is set
+$varMap.put("firstForm", "0")
+$varMap.put("backButton", "0")
+$varMap.put("nextButton", "0")
+$varMap.put("exitButton", "0")
+
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setAccess("protected")
+$FT.setType("TextBox")
+$FT.setName("messageBox")
+$CT.addField($FT, $tagDic.getPrefix())
+
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setAccess("protected")
+$FT.setType("String[]")
+$FT.setName("listElements")
+$CT.addField($FT, $tagDic.getPrefix())
+
+## Init the commandAction-method
+#set($COMMANDACTION = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$COMMANDACTION.setAccess("public")
+$COMMANDACTION.setType("void")
+$COMMANDACTION.setName("commandAction")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("Command")
+$FT.setName("command")
+$COMMANDACTION.addParameter($FT)
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("Displayable")
+$FT.setName("screen")
+$COMMANDACTION.addParameter($FT)
+
+
+#************************#
+#*** Reading the Tags ***#
+#************************#
+#foreach ($field in $class.fields)
+  #if (!($field.getTags().isEmpty()))
+    #if ($field.getType() == "javax.microedition.lcdui.Command")
+      #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+      $FT.setAccess("$field.getModifiers()")
+      $FT.setType("Command")
+      $FT.setName("$field.name")
+      $CT.addField($FT, $tagDic.getPrefix())
+      #set($tag = false)
+      #set($tag = $field.getTag($tagDic.getTag("addCommand")))
+      #if ($tag)
+        #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+        $MT.setAccess("public")
+        $MT.setType("void")
+        $MT.setName("call$StringUtils.capitalizeFirstLetter($field.name)")
+        $CT.addMethod($MT, $tagDic.getPrefix())
+
+        $commandVec.addElement($field.name)
+        $commandLabels.put($field.name, $field.getTag($tagDic.getTag("label")).value)
+      #end
+      #set($tag = false)
+      #set($tag = $field.getTag($tagDic.getTag("execute")))
+      #if ($tag)
+        #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+        $MT.setAccess("public")
+        $MT.setType("void")
+        $MT.setName("call$StringUtils.capitalizeFirstLetter($field.name)")
+        $MT.addBody("$tag.value")
+        $CT.addMethod($MT, $tagDic.getPrefix())
+      #else
+        #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+        $MT.setAccess("public")
+        $MT.setAbstract(true)
+        $MT.setType("void")
+        $MT.setName("call$StringUtils.capitalizeFirstLetter($field.name)")
+        $CT.addMethod($MT, $tagDic.getPrefix())
+      #end
+    #end
+  #end
+#end
+
+#foreach ($field in $class.fields)
+  #if (!($field.getTags().isEmpty()))
+    #if ($field.getType() == "javax.microedition.lcdui.Form")
+      #set($tag = false)
+      #set($tag = $field.getTag($tagDic.getTag("firstDisplay")))
+      #if ($tag)
+        $varMap.put("firstForm", $field.name)
+      #end
+      #scr_gen_Form ($field)
+      #scr_gen_FormInit($field)
+    #end
+
+    #if ($field.getType() == "javax.microedition.lcdui.List")
+      #set($tag = false)
+      #set($tag = $field.getTag($tagDic.getTag("firstDisplay")))
+      #if ($tag)
+        $varMap.put("firstForm", $field.name)
+      #end
+      #scr_gen_List ($field)
+      #scr_gen_ListInit ($field)
+    #end
+
+    #if ($field.getType() == "javax.microedition.lcdui.Alert")
+      #set($tag = false)
+      #set($tag = $field.getTag($tagDic.getTag("firstDisplay")))
+      #if ($tag)
+        $varMap.put("firstForm", $field.name)
+      #end
+      #scr_gen_Alert ($field)
+      #scr_gen_AlertInit ($field)
+    #end
+
+    #if ($field.getType() == "javax.microedition.lcdui.TextField")
+      #scr_gen_TextField ($field)
+      #scr_gen_TextFieldInit ($field)
+    #end
+
+    #if ($field.getType() == "javax.microedition.lcdui.StringItem")
+      #scr_gen_StringItem ($field)
+      #scr_gen_StringItemInit ($field)
+    #end
+
+    #if ($field.getType() == "javax.microedition.lcdui.ImageItem")
+      #scr_gen_ImageItem ($field)
+      #scr_gen_ImageItemInit ($field)
+    #end
+
+    #if ($field.getType() == "javax.microedition.lcdui.ChoiceGroup")
+      #scr_gen_ChoiceGroup ($field)
+      #scr_gen_ChoiceGroupInit ($field)
+    #end
+
+  #end
+#end
+
+#foreach ($field in $class.fields)
+  #if ($field.getType() == "javax.microedition.lcdui.Form")
+    $displayVec.addElement($field.name)
+  #end
+  #if ($field.getType() == "javax.microedition.lcdui.List")
+    $displayVec.addElement($field.name)
+  #end
+  #if ($field.getType() == "javax.microedition.lcdui.Alert")
+    $displayVec.addElement($field.name)
+  #end
+#end
+#scr_gen_viewDisplay()
+
+$CT.addImport("javax.microedition.midlet.*")
+$CT.addImport("javax.microedition.lcdui.*")
+$CT.addImport("javax.microedition.midlet.MIDletStateChangeException")
+
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("void")
+$MT.setName("callMessageBox")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("String")
+$FT.setName("label")
+$MT.addParameter($FT)
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("String")
+$FT.setName("text")
+$MT.addParameter($FT)
+
+$MT.addBody("messageBox = new TextBox( label, text, 256, TextField.ANY );")
+$MT.addBody("display.setCurrent(messageBox);")
+$CT.addMethod($MT, $tagDic.getPrefix())
+
+#scr_gen_constructor($class)
+
+#scr_change_startApp()
+
+#scr_gen_commandAction()
+
+$CT.addMethod($COMMANDACTION)
+
+
+#*** Add MIDLET-Methods and standard-changes***#
+$CT.setBaseClass("MIDlet")
+$CT.addInterface("CommandListener")
+
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setAccess("public static")
+$FT.setType("String")
+$FT.setName("CID")
+$FT.setValue("${st}$CID${st}")
+$CT.addField($FT, $tagDic.getPrefix())
+$CT.addImport("mobcon.message.*")
+$CT.addImport("mobcon.storeables.*")
+$CT.addImport("java.util.Hashtable")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setAccess("protected")
+$FT.setName("display")
+$FT.setType("Display")
+$CT.addField($FT, $tagDic.getPrefix())
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setName("startApp")
+$MT.setType("void")
+$CT.addMethod($MT, $tagDic.getPrefix())
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setName("pauseApp")
+$MT.setType("void")
+$CT.addMethod($MT, $tagDic.getPrefix())
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setName("destroyApp")
+$MT.setType("void")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setName("unconditional")
+$FT.setType("boolean")
+$MT.addParameter($FT)
+$CT.addMethod($MT, $tagDic.getPrefix())
+
+
+## End concern-tag
+#end

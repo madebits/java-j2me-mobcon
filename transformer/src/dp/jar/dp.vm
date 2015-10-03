@@ -1,0 +1,1215 @@
+## @param vdoclet.docinfo.DocInfo $docInfo
+## @param vdoclet.Generator $vdoclet
+## @param ClassTemplate $STOREOBJECT from Control.vm
+## $docInfo is Class vdoclet.docinfo.DocInfo $docInfo
+## $vdoclet is Class vdoclet.Generator
+#****** Generate Helper Variables ******
+*#
+#set($StringUtils = $vdoclet.makeBean("org.apache.velocity.util.StringUtils"))
+#set($varMap = $vdoclet.makeBean("java.util.Hashtable"))
+#set($valVec = $vdoclet.makeBean("java.util.Vector"))
+#set($storeVec = $vdoclet.makeBean("java.util.Vector"))
+#set($st = '"')
+##
+#****** Initialize the Dictionary ******#
+#set($tagDic = $transformer.getTagDic())
+
+##If the concern-tag (here @dp) is set, parse the file
+#set($tag = false)
+#set($tag = $class.getTag("$tagDic.getPrefix()"))
+#if ($tag)
+$transformer.setServerFileUsed(true)
+
+#************************#
+#******** MACROS ********#
+#************************#
+
+##
+##
+#****** Macro dp_default_value******
+# Function: Generates the Default-Values (-1, *)
+# Note: Double and float are not yet supported by J2ME
+*#
+#macro(dp_default_value $type $name)
+  ## default-value
+  #set($value = "null")
+
+  #if($type == "boolean")
+    #set($value = "false")
+  #end
+  #if($type == "byte")
+    #set($value = "0")
+  #end
+  #if($type == "char")
+    #set($value = "0")
+  #end
+  #if($type == "double")
+    #set($value = "-1")
+  #end
+  #if($type == "float")
+    #set($value = "-1")
+  #end
+  #if($type == "int")
+    #set($value = "-1")
+  #end
+  #if($type == "long")
+    #set($value = "-1")
+  #end
+  #if($type == "short")
+    #set($value = "-1")
+  #end
+  #if($type == "java.lang.String")
+    #set($value = '"*"')
+  #end
+
+  #set($allName = "All$StringUtils.capitalizeFirstLetter($name)")
+
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setAccess("public static final")
+  $FT.setType("$type")
+  $FT.setName("$allName")
+  $FT.setValue("$value")
+  $STOREOBJECT.addField($FT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro dp_meth_get******
+# Function: Generates the get-Method of the Field
+*#
+#macro(dp_meth_get $type $name)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("$type")
+  $MT.setName("get$StringUtils.capitalizeFirstLetter($name)")
+  $MT.addEnd("return $name;")
+  $STOREOBJECT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro dp_meth_set******
+# Function:
+# - Generates the set-Method of the Field
+*#
+#macro(dp_meth_set $type $name $field)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("set$StringUtils.capitalizeFirstLetter($name)")
+  $MT.addException("Exception")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("$type")
+  $FT.setName("value")
+  $MT.addParameter($FT)
+  $MT.addEnd("$name = value;")
+  $STOREOBJECT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+#****** Macro dp_gen_constructor******
+# Function: Generates the Constructors No-Arg / with Args
+*#
+#macro(dp_gen_constructor $class)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setName("${class.shortName}StoreObject")
+
+  #foreach($field in $class.fields)
+    #set($tag = false)
+    #set($tag = $field.getTag($tagDic.getTag("access")))
+    #if ($tag)
+      #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+      $FT.setName("$field.name")
+      $FT.setValue("All$StringUtils.capitalizeFirstLetter($field.name)")
+      $MT.addField($FT, $tagDic.getPrefix())
+    #end
+  #end
+  $STOREOBJECT.addMethod($MT, $tagDic.getPrefix())
+
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setName("${class.shortName}StoreObject")
+  $MT.addBegin("try{")
+  #foreach($field in $class.fields)
+    #set($tag = false)
+    #set($tag = $field.getTag($tagDic.getTag("access")))
+    #if ($tag)
+      #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+      $FT.setType("$field.Type")
+      $FT.setName("$field.Name")
+      $MT.addParameter($FT)
+      $MT.addBody("set$StringUtils.capitalizeFirstLetter($field.name)($field.name);")
+    #end
+  #end
+  $MT.addEnd("}catch(Exception e){e.printStackTrace();}")
+  $STOREOBJECT.addMethod($MT, $tagDic.getPrefix())
+
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setName("${class.shortName}StoreObject")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("String")
+  $FT.setName("id")
+  $MT.addParameter($FT)
+
+  $MT.addBegin("try{")
+  #foreach($field in $class.fields)
+    #set($tag = false)
+    #set($tag = $field.getTag($tagDic.getTag("access")))
+    #if ($tag)
+      #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+      $FT.setType("$field.Type")
+      $FT.setName("$field.Name")
+      $MT.addParameter($FT)
+      $MT.addBody("set$StringUtils.capitalizeFirstLetter($field.name)($field.name);")
+    #end
+  #end
+  $MT.addBody("setId(id);")
+  $MT.addEnd("}catch(Exception e){e.printStackTrace();}")
+  $STOREOBJECT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro dp_gen_field******
+# Function:
+# - Generates the Fields
+*#
+#macro(dp_gen_field $field)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setAccess("private")
+  $FT.setType("$field.getType()")
+  $FT.setName("$field.name")
+  $STOREOBJECT.addField($FT, $tagDic.getPrefix())
+
+  #dp_default_value ($field.getType() $field.name)
+
+  #dp_meth_get($field.getType() $field.name)
+
+  #dp_meth_set($field.getType() $field.name $field)
+#end
+
+
+##
+##
+#****** Macro dp_gen_ID******
+# Function:
+# - Generates the ID-field and the access methods
+*#
+#macro(dp_gen_ID $field)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setAccess("private")
+  $FT.setType("String")
+  $FT.setName("id")
+  $FT.setValue("${st}${class.shortName}StoreObject${st}")
+  $STOREOBJECT.addField($FT, $tagDic.getPrefix())
+
+  ## Add Id-accessors to storeobject
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("String")
+  $MT.setName("getId")
+  $MT.addBody("return this.id;")
+  $STOREOBJECT.addMethod($MT, $tagDic.getPrefix())
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("setId")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("String")
+  $FT.setName("id")
+  $MT.addParameter($FT)
+  $MT.addBody("this.id = id;")
+  $STOREOBJECT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro dp_gen_accessMeths******
+# Function: Generates the storeXxx and retrieveXxx Methods in the main-class
+*#
+#macro(dp_gen_accessMeths)
+  #foreach ($storeField in $storeVec)
+    #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+    $MT.setAccess("public")
+    $MT.setType("$storeField.getType()")
+    $MT.setName("get$StringUtils.capitalizeFirstLetter($storeField.name)")
+    $MT.addBody("${class.shortName}StoreObject o = store.getStoreObject();")
+    $MT.addBody("return o.get$StringUtils.capitalizeFirstLetter($storeField.name)();")
+    $CT.addMethod($MT, $tagDic.getPrefix())
+    #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+    $MT.setAccess("public")
+    $MT.setType("void")
+    $MT.setName("set$StringUtils.capitalizeFirstLetter($storeField.name)")
+    #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+    $FT.setType("$storeField.getType()")
+    $FT.setName("in")
+    $MT.addParameter($FT)
+    $MT.addBody("try{")
+    $MT.addBody("${class.shortName}StoreObject storeObject = null;")
+    $MT.addBody("storeObject = store.getStoreObject();")
+    $MT.addBody("storeObject.set$StringUtils.capitalizeFirstLetter($storeField.name)(in);")
+    $MT.addBody("store.store(storeObject);")
+    $MT.addBody("} catch(Exception e){System.out.println(e); }")
+    $CT.addMethod($MT, $tagDic.getPrefix())
+  #end
+#end
+
+
+##
+##
+#****** Macro dp_gen_object2record******
+# Function: Generates the object2record-Method, if there are Fields to store
+*#
+#macro(dp_gen_object2record)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("byte[]")
+  $MT.setName("object2record")
+  $MT.addException("IOException")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("ByteArrayOutputStream")
+  $FT.setName("baos")
+  $FT.setValue("new ByteArrayOutputStream()")
+  $MT.addField($FT, $tagDic.getPrefix())
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("DataOutputStream")
+  $FT.setName("outputStream")
+  $FT.setValue("new DataOutputStream(baos)")
+  $MT.addField($FT, $tagDic.getPrefix())
+
+  $MT.addBody("byte[] out;")
+  $MT.addBody("outputStream.writeUTF(this.getId());")
+  $MT.addBody("outputStream.writeUTF(this.getMobileID());")
+  #foreach ($storeField in $storeVec)
+    #if($storeField.getType() == "java.lang.String")
+      $MT.addBody("outputStream.writeUTF(this.get$StringUtils.capitalizeFirstLetter($storeField.name)());")
+    #elseif($storeField.getType() == "boolean")
+      $MT.addBody("outputStream.write$StringUtils.capitalizeFirstLetter($storeField.getType())(this.get$StringUtils.capitalizeFirstLetter($storeField.name)());")
+    #elseif($storeField.getType() == "byte")
+      $MT.addBody("outputStream.write$StringUtils.capitalizeFirstLetter($storeField.getType())(this.get$StringUtils.capitalizeFirstLetter($storeField.name)());")
+    #elseif($storeField.getType() == "char")
+      $MT.addBody("outputStream.write$StringUtils.capitalizeFirstLetter($storeField.getType())(this.get$StringUtils.capitalizeFirstLetter($storeField.name)());")
+    #elseif($storeField.getType() == "double")
+      $MT.addBody("outputStream.write$StringUtils.capitalizeFirstLetter($storeField.getType())(this.get$StringUtils.capitalizeFirstLetter($storeField.name)());")
+    #elseif($storeField.getType() == "float")
+      $MT.addBody("outputStream.write$StringUtils.capitalizeFirstLetter($storeField.getType())(this.get$StringUtils.capitalizeFirstLetter($storeField.name)());")
+    #elseif($storeField.getType() == "int")
+      $MT.addBody("outputStream.write$StringUtils.capitalizeFirstLetter($storeField.getType())(this.get$StringUtils.capitalizeFirstLetter($storeField.name)());")
+    #elseif($storeField.getType() == "long")
+      $MT.addBody("outputStream.write$StringUtils.capitalizeFirstLetter($storeField.getType())(this.get$StringUtils.capitalizeFirstLetter($storeField.name)());")
+    #elseif($storeField.getType() == "short")
+      $MT.addBody("outputStream.write$StringUtils.capitalizeFirstLetter($storeField.getType())(this.get$StringUtils.capitalizeFirstLetter($storeField.name)());")
+    #else
+      $MT.addBody("if($storeField.name == null){")
+      $MT.addBody("$storeField.name = new ${storeField.type}();")
+      $MT.addBody("}")
+      $MT.addBody("out = (this.get$StringUtils.capitalizeFirstLetter($storeField.name)()).object2record();")
+      $MT.addBody("outputStream.writeInt(out.length);")
+      $MT.addBody("outputStream.write(out);")
+    #end
+
+  #end
+  $MT.addEnd("return baos.toByteArray();")
+  $STOREOBJECT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro #dp_gen_record2object******
+# Function: Generates the record2object-Method, if there are Fields to store
+*#
+#macro(dp_gen_record2object)
+
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("record2object")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("byte[]")
+  $FT.setName("rec")
+  $MT.addParameter($FT)
+  $MT.addException("Exception")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("ByteArrayInputStream")
+  $FT.setName("bais")
+  $FT.setValue("new ByteArrayInputStream(rec)")
+  $MT.addField($FT, $tagDic.getPrefix())
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("DataInputStream")
+  $FT.setName("inputStream")
+  $FT.setValue("new DataInputStream(bais)")
+  $MT.addField($FT, $tagDic.getPrefix())
+
+  $MT.addBody("byte[] out;")
+  $MT.addBody("this.setId(inputStream.readUTF());")
+  $MT.addBody("this.setMobileID(inputStream.readUTF());")
+
+  #foreach ($storeField in $storeVec)
+    #if($storeField.getType() == "java.lang.String")
+      $MT.addBody("this.set$StringUtils.capitalizeFirstLetter($storeField.name)(inputStream.readUTF());")
+    #elseif($storeField.getType() == "boolean")
+      $MT.addBody("this.set$StringUtils.capitalizeFirstLetter($storeField.name)(inputStream.read$StringUtils.capitalizeFirstLetter($storeField.getType())());")
+    #elseif($storeField.getType() == "byte")
+      $MT.addBody("this.set$StringUtils.capitalizeFirstLetter($storeField.name)(inputStream.read$StringUtils.capitalizeFirstLetter($storeField.getType())());")
+    #elseif($storeField.getType() == "char")
+      $MT.addBody("this.set$StringUtils.capitalizeFirstLetter($storeField.name)(inputStream.read$StringUtils.capitalizeFirstLetter($storeField.getType())());")
+    #elseif($storeField.getType() == "double")
+      $MT.addBody("this.set$StringUtils.capitalizeFirstLetter($storeField.name)(inputStream.read$StringUtils.capitalizeFirstLetter($storeField.getType())());")
+    #elseif($storeField.getType() == "float")
+      $MT.addBody("this.set$StringUtils.capitalizeFirstLetter($storeField.name)(inputStream.read$StringUtils.capitalizeFirstLetter($storeField.getType())());")
+    #elseif($storeField.getType() == "int")
+      $MT.addBody("this.set$StringUtils.capitalizeFirstLetter($storeField.name)(inputStream.read$StringUtils.capitalizeFirstLetter($storeField.getType())());")
+    #elseif($storeField.getType() == "long")
+      $MT.addBody("this.set$StringUtils.capitalizeFirstLetter($storeField.name)(inputStream.read$StringUtils.capitalizeFirstLetter($storeField.getType())());")
+    #elseif($storeField.getType() == "short")
+      $MT.addBody("this.set$StringUtils.capitalizeFirstLetter($storeField.name)(inputStream.read$StringUtils.capitalizeFirstLetter($storeField.getType())());")
+    #else
+      $MT.addBody("out = new byte[inputStream.readInt()];")
+      $MT.addBody("inputStream.read(out);")
+      $MT.addBody("this.$storeField.name = new ${storeField.type}();")
+      $MT.addBody("(this.$storeField.name).record2object(out);")
+    #end
+  #end
+
+  $STOREOBJECT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro #dp_gen_toString******
+# Function: Generates the toString() method
+*#
+#macro(dp_gen_toString)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("String")
+  $MT.setName("toString")
+
+  #set($body = "return this.id+${st} = ${st}")
+  #foreach ($field in $storeVec)
+    #set($body = "${body}+this.${field.name}+${st} / ${st}")
+  #end
+
+  $MT.addBody("${body}+${st}${st};")
+  $STOREOBJECT.addMethod($MT, $tagDic.getPrefix())
+#end
+#****** END MACROS ******#
+
+
+##
+##
+##
+##
+#************************#
+#******* WORKFLOW *******#
+#************************#
+
+#set($STOREOBJECT = $vdoclet.makeBean("mobcon.ct.ClassTemplate"))
+$STOREOBJECT.addImport("mobcon.message.*")
+$STOREOBJECT.addImport("mobcon.storeables.*")
+$STOREOBJECT.addImport("javax.microedition.rms.*")
+$STOREOBJECT.addImport("java.io.DataOutputStream")
+$STOREOBJECT.addImport("java.io.ByteArrayOutputStream")
+$STOREOBJECT.addImport("java.io.IOException")
+$STOREOBJECT.addImport("java.io.ByteArrayInputStream")
+$STOREOBJECT.addImport("java.io.DataInputStream")
+$STOREOBJECT.addImport("java.io.EOFException")
+$STOREOBJECT.addImport("java.util.*")
+$STOREOBJECT.setAccess("public")
+$STOREOBJECT.setName("$class.getShortName()StoreObject")
+$STOREOBJECT.addInterface("Storeable")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setAccess("public static final")
+$FT.setType("String")
+$FT.setName("AllId")
+$FT.setValue("${st}*${st}")
+$STOREOBJECT.addField($FT, $tagDic.getPrefix())
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setAccess("public")
+$FT.setType("String")
+$FT.setName("mobileID")
+$FT.setValue("${st}*${st}")
+$STOREOBJECT.addField($FT, $tagDic.getPrefix())
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("String")
+$MT.setName("getMobileID")
+$MT.addBody("return this.mobileID;")
+$STOREOBJECT.addMethod($MT, $tagDic.getPrefix())
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("void")
+$MT.setName("setMobileID")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("String")
+$FT.setName("set")
+$MT.addParameter($FT)
+$MT.addBody("this.mobileID = set;")
+$STOREOBJECT.addMethod($MT, $tagDic.getPrefix())
+
+
+#************************#
+#*** Reading the Tags ***#
+#************************#
+#foreach ($field in $class.fields)
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("access")))
+  #if ($tag)
+    #dp_gen_field ($field)
+  #end
+
+  ## Collect the fields to save
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("store")))
+  #if ($tag)
+    $storeVec.addElement($field)
+  #end
+
+#end
+
+## Generate the Constructors, validaters and store methods
+#dp_gen_constructor ($class)
+
+#if($storeVec.size() != 0)
+  #dp_gen_object2record()
+  #dp_gen_record2object()
+  #dp_gen_accessMeths()
+#else
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("byte[]")
+  $MT.setName("object2record")
+  $MT.addException("IOException")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("ByteArrayOutputStream")
+  $FT.setName("baos")
+  $FT.setValue("new ByteArrayOutputStream()")
+  $MT.addField($FT, $tagDic.getPrefix())
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("DataOutputStream")
+  $FT.setName("outputStream")
+  $FT.setValue("new DataOutputStream(baos)")
+  $MT.addField($FT, $tagDic.getPrefix())
+  $MT.addEnd("return baos.toByteArray();")
+  $STOREOBJECT.addMethod($MT, $tagDic.getPrefix())
+
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("record2object")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("byte[]")
+  $FT.setName("rec")
+  $MT.addParameter($FT)
+  $MT.addException("Exception")
+  $STOREOBJECT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+## create the ID-field
+#dp_gen_ID($field)
+
+#dp_gen_toString()
+
+## Add the initialization of the store to the Constructor
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setName("${MAINCT.getName()}")
+$MT.addBody("try{")
+$MT.addBody("store = new ${class.shortName}Store(${st}${class.shortName}${st});")
+$MT.addBody("store.initStore();")
+$MT.addBody("}catch(Exception e){System.out.println(e);}")
+$CT.addMethod($MT, $tagDic.getPrefix())
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setAccess("protected")
+$FT.setType("${class.shortName}Store")
+$FT.setName("store")
+$FT.setValue("null")
+$CT.addField($FT, $tagDic.getPrefix())
+
+##Load remotely stored StoreObject
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("void")
+$MT.setName("startApp")
+##$MT.addBegin("retrieve();")
+$CT.addMethod($MT, $tagDic.getPrefix())
+
+##Store remotely the StoreObject and close the store in destroyApp()
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("void")
+$MT.setName("destroyApp")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("boolean")
+$FT.setName("unconditional")
+$MT.addParameter($FT)
+$MT.addBody("store();")
+$MT.addEnd("try{")
+$MT.addEnd("store.closeStore();")
+$MT.addEnd("}catch(Exception e){System.out.println(e);}")
+$CT.addMethod($MT, $tagDic.getPrefix())
+
+## Add the storeObject and retrieveObject methods, for any Storeable objects
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("String")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("Storeable")
+$FT.setName("sa")
+$MT.addParameter($FT)
+$MT.setName("storeObject")
+$MT.addBody("try{")
+$MT.addBody("NetMessage message = new NetMessage();")
+$MT.addBody("message.setCID(CID);")
+$MT.addBody("message.setPID(${st}${PID}${st});")
+$MT.addBody("message.setIID(${st}${IID}${st});")
+$MT.addBody("message.setOID(${st}3${st});")
+$MT.addBody("message.data = sa.object2record();", "encrypt")
+$MT.addBody("NetMessage ret = new NetMessage();")
+$MT.addBody("ret = CTX.getNetMessageResult(message);")
+$MT.addBody("return new String(ret.data);")
+$MT.addBody("}catch(Exception e){System.out.println(this.getClass().getName()+${st}: ${st}+e); return null;}")
+$CT.addMethod($MT, $tagDic.getPrefix())
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("void")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("String")
+$FT.setName("id")
+$MT.addParameter($FT)
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("Storeable")
+$FT.setName("sa")
+$MT.addParameter($FT)
+$MT.setName("retrieveObject")
+$MT.addBody("try{")
+$MT.addBody("NetMessage message = new NetMessage();")
+$MT.addBody("message.setCID(CID);")
+$MT.addBody("message.setPID(${st}${PID}${st});")
+$MT.addBody("message.setIID(${st}${IID}${st});")
+$MT.addBody("message.setOID(${st}4${st});")
+$MT.addBody("message.data = id.getBytes();")
+$MT.addBody("NetMessage ret = new NetMessage();")
+$MT.addBody("ret = CTX.getNetMessageResult(message);")
+$MT.addBody("System.out.println(${st}Retrieved Object from server${st});")
+$MT.addBody("byte[] decdat;")
+$MT.addBody("decdat = ret.data;", "decrypt")
+$MT.addBody("sa.record2object(decdat);")
+$MT.addBody("}catch(Exception e){System.out.println(this.getClass().getName()+${st}: ${st}+e); }")
+$CT.addMethod($MT, $tagDic.getPrefix())
+
+## Add the store and retrieve methods for StoreObjects
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("void")
+$MT.setName("store")
+$MT.addBody("try{")
+$MT.addBody("${class.shortName}StoreObject storeObject = null;")
+$MT.addBody("storeObject = store.getStoreObject();")
+$MT.addBody("NetMessage message = new NetMessage();")
+$MT.addBody("message.setCID(CID);")
+$MT.addBody("message.setPID(${st}${PID}${st});")
+$MT.addBody("message.setIID(${st}${IID}${st});")
+$MT.addBody("message.setOID(${st}1${st});")
+$MT.addBody("StoreableStringData ssa = new StoreableStringData();")
+$MT.addBody("ssa.setString(this.getMobileID());")
+$MT.addBody("byte[] outData = storeObject.object2record();", "encrypt")
+$MT.addBody("ssa.setData(outData);")
+$MT.addBody("message.data = ssa.object2record();")
+$MT.addBody("CTX.sendNetMessage(message);")
+$MT.addBody("}catch(Exception e){System.out.println(this.getClass().getName()+${st}: ${st}+e); }")
+$CT.addMethod($MT, $tagDic.getPrefix())
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("void")
+$MT.setName("retrieve")
+$MT.addBody("try{")
+$MT.addBody("NetMessage message = new NetMessage();")
+$MT.addBody("message.setCID(CID);")
+$MT.addBody("message.setPID(${st}${PID}${st});")
+$MT.addBody("message.setIID(${st}${IID}${st});")
+$MT.addBody("message.setOID(${st}2${st});")
+$MT.addBody("StoreableStringData ssa = new StoreableStringData();")
+$MT.addBody("ssa.setString(this.getMobileID());")
+$MT.addBody("message.data = ssa.object2record();")
+$MT.addBody("NetMessage ret = new NetMessage();")
+$MT.addBody("ret = CTX.getNetMessageResult(message);")
+$MT.addBody("System.out.println(${st}Retrieved Object from server: ${st}+ret);")
+$MT.addBody("if(!ret.getOID().equals(${st}FF${st})){")
+$MT.addBody("${class.shortName}StoreObject retObj = new ${class.shortName}StoreObject();")
+$MT.addBody("byte[] decdat;")
+$MT.addBody("decdat = ret.data;", "decrypt")
+$MT.addBody("retObj.record2object(decdat);")
+$MT.addBody("store.store(retObj);")
+$MT.addBody("}else{")
+$MT.addBody("${class.shortName}StoreObject retObj = new ${class.shortName}StoreObject();")
+$MT.addBody("store.store(retObj);")
+$MT.addBody("}")
+$MT.addBody("}catch(Exception e){System.out.println(this.getClass().getName()+${st}: ${st}+e); }")
+$CT.addMethod($MT, $tagDic.getPrefix())
+
+## Add the getMobileID-method
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("String")
+$MT.setName("getMobileID")
+$MT.addBody("MobAppStoreObject o = store.getStoreObject();")
+$MT.addBody("String mobid = ${st}*${st};")
+$MT.addBody("if(o.getMobileID().equals(${st}*${st}))")
+$MT.addBody("{")
+$MT.addBody("try{")
+$MT.addBody("NetMessage message = new NetMessage();")
+$MT.addBody("message.setCID(CID);")
+$MT.addBody("message.setPID(${st}${PID}${st});")
+$MT.addBody("message.setIID(${st}${IID}${st});")
+$MT.addBody("message.setOID(${st}5${st});")
+$MT.addBody("NetMessage ret = new NetMessage();")
+$MT.addBody("ret = CTX.getNetMessageResult(message);")
+$MT.addBody("System.out.println(${st}Retrieved Object from server: ${st}+ret);")
+$MT.addBody("StoreableStringData sd = new StoreableStringData();")
+$MT.addBody("sd.record2object(ret.data);")
+$MT.addBody("mobid = sd.getString();")
+$MT.addBody("o.setMobileID(mobid);")
+$MT.addBody("store.store(o);")
+$MT.addBody("}catch(Exception e){System.out.println(this.getClass().getName()+${st}: ${st}+e); }")
+$MT.addBody("}")
+$MT.addBody("return o.getMobileID();")
+$CT.addMethod($MT, $tagDic.getPrefix())
+
+#****** END WORKFLOW *******#
+
+## Add the storeObject to the transformer's mobileClassTemplates
+$transformer.addMobileClassTemplate($STOREOBJECT)
+
+##*************************************#
+##******* Output of the STORE *********#
+##*************************************#
+#set($CTS = $vdoclet.makeBean("mobcon.ct.ClassTemplate"))
+$CTS.addImport("mobcon.message.*")
+$CTS.addImport("mobcon.storeables.*")
+$CTS.addImport("javax.microedition.rms.*")
+$CTS.addImport("java.io.DataOutputStream")
+$CTS.addImport("java.io.ByteArrayOutputStream")
+$CTS.addImport("java.io.IOException")
+$CTS.addImport("java.io.ByteArrayInputStream")
+$CTS.addImport("java.io.DataInputStream")
+$CTS.addImport("java.io.EOFException")
+$CTS.addImport("java.util.*")
+
+$CTS.setAccess("public")
+$CTS.setName("$class.getShortName()Store")
+$CTS.addInterface("RecordFilter")
+
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setAccess("private")
+$FT.setType("RecordStore")
+$FT.setName("recordStore")
+$FT.setValue("null")
+$CTS.addField($FT, $tagDic.getPrefix())
+
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setAccess("private")
+$FT.setType("${class.shortName}StoreObject")
+$FT.setName("filter")
+$FT.setValue("null")
+$CTS.addField($FT, $tagDic.getPrefix())
+
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setAccess("private ")
+$FT.setType("String")
+$FT.setName("storeName")
+$FT.setValue("${st}${st}")
+$CTS.addField($FT, $tagDic.getPrefix())
+
+
+#************ Constructor **********#
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setName("${class.shortName}Store")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("String")
+$FT.setName("storeName")
+$MT.addParameter($FT)
+$MT.addBody("this.storeName = storeName;")
+$CTS.addMethod($MT, $tagDic.getPrefix())
+
+#************ initStore **********#
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("RecordStore")
+$MT.setName("initStore")
+$MT.addException("RecordStoreException")
+$MT.addBody("if(!isInited()) recordStore = RecordStore.openRecordStore(storeName, true);")
+$MT.addBody("return recordStore;")
+$CTS.addMethod($MT, $tagDic.getPrefix())
+
+#************ closeStore **********#
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("void")
+$MT.setName("closeStore")
+$MT.addException("Exception")
+$MT.addBody("if(isInited()){")
+$MT.addBody("recordStore.closeRecordStore();")
+$MT.addBody("recordStore = null;")
+$MT.addBody("}")
+$CTS.addMethod($MT, $tagDic.getPrefix())
+
+#************ deleteStore **********#
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("void")
+$MT.setName("deleteStore")
+$MT.addException("Exception")
+$MT.addBody("if(!isInited()) RecordStore.deleteRecordStore(storeName);")
+$CTS.addMethod($MT, $tagDic.getPrefix())
+
+#************ isInited **********#
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("boolean")
+$MT.setName("isInited")
+$MT.addBody("return ((recordStore == null) ? false : true);")
+$CTS.addMethod($MT, $tagDic.getPrefix())
+
+#************ matches **********#
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("boolean")
+$MT.setName("matches")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("byte[]")
+$FT.setName("rec")
+$MT.addParameter($FT)
+$MT.addBody("if(filter == null) return false; // none")
+#if($valVec.size() != 0)
+  #set($count = 0)
+  $MT.addBody("if(");
+  #foreach ($valField in $valVec)
+    #if($count == 0)
+      $MT.addBody("(filter.get$StringUtils.capitalizeFirstLetter($valField.Name)() == ${class.shortName}StoreObject.All$StringUtils.capitalizeFirstLetter($valField.Name))")
+    #else
+      $MT.addBody("&& (filter.get$StringUtils.capitalizeFirstLetter($valField.Name)() == ${class.shortName}StoreObject.All$StringUtils.capitalizeFirstLetter($valField.Name))")
+    #end
+    #set($count = $count + 1)
+  #end
+  $MT.addBody(") return true;")
+#end
+$MT.addBody("${class.shortName}StoreObject storeObject = new ${class.shortName}StoreObject();")
+$MT.addBody("try {")
+$MT.addBody("storeObject.record2object(rec);")
+$MT.addBody("} catch(Exception ex) {")
+$MT.addBody("return false;")
+$MT.addBody("}")
+$MT.addBody("boolean result = true;")
+
+$MT.addBody("if(!filter.getId().equals(${class.shortName}StoreObject.AllId))")
+$MT.addBody("result = result &")
+$MT.addBody("(storeObject.getId().equals(filter.getId()));")
+#if($valVec.size() != 0)
+  #foreach ($valField in $valVec)
+    #if($valField.getType() == "java.lang.String")
+      $MT.addBody("if(filter.get$StringUtils.capitalizeFirstLetter($valField.Name)().equals(${class.shortName}StoreObject.All$StringUtils.capitalizeFirstLetter($valField.Name))){")
+      $MT.addBody("result = result")
+      $MT.addBody("& (storeObject.get$StringUtils.capitalizeFirstLetter($valField.Name)().equals(filter.get$StringUtils.capitalizeFirstLetter($valField.Name)()));")
+    #else
+      $MT.addBody("if(filter.get$StringUtils.capitalizeFirstLetter($valField.Name)() != ${class.shortName}StoreObject.All$StringUtils.capitalizeFirstLetter($valField.Name)){")
+      $MT.addBody("result = result")
+      $MT.addBody("& (storeObject.get$StringUtils.capitalizeFirstLetter($valField.Name)() == filter.get$StringUtils.capitalizeFirstLetter($valField.Name)());")
+    #end
+    $MT.addBody("}")
+  #end
+#end
+$MT.addBody("return result;")
+$CTS.addMethod($MT, $tagDic.getPrefix())
+
+#************ store **********#
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("int")
+$MT.setName("store")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("${class.shortName}StoreObject")
+$FT.setName("o")
+$MT.addParameter($FT)
+$MT.addException("Exception")
+$MT.addBody("if(this.isInited() && (o != null)) {")
+$MT.addBody("int id = getRecordID(o);")
+$MT.addBody("byte[] b = o.object2record();")
+$MT.addBody("if(id < 0) {")
+$MT.addBody("return recordStore.addRecord(b, 0, b.length);")
+$MT.addBody("} else {")
+$MT.addBody("recordStore.setRecord(id, b, 0, b.length);")
+$MT.addBody("return id;")
+$MT.addBody("}")
+$MT.addBody("}")
+$MT.addBody("return -1;")
+$CTS.addMethod($MT, $tagDic.getPrefix())
+
+#************ store2 **********#
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("int")
+$MT.setName("remove")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("${class.shortName}StoreObject")
+$FT.setName("o")
+$MT.addParameter($FT)
+$MT.addException("Exception")
+$MT.addBody("int count = 0;")
+$MT.addBody("RecordEnumeration re = retrieve2(o, false);")
+$MT.addBody("while (re.hasNextElement()) {")
+$MT.addBody("count++;")
+$MT.addBody("recordStore.deleteRecord(re.nextRecordId());")
+$MT.addBody("}")
+$MT.addBody("return count;")
+$CTS.addMethod($MT, $tagDic.getPrefix())
+
+#************ retrieve **********#
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("Vector")
+$MT.setName("retrieve")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("${class.shortName}StoreObject")
+$FT.setName("o")
+$MT.addParameter($FT)
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("boolean")
+$FT.setName("sorted")
+$MT.addParameter($FT)
+$MT.addException("Exception")
+$MT.addBody("RecordEnumeration re = retrieve2(o, sorted);")
+$MT.addBody("Vector result = new Vector();")
+$MT.addBody("while(re.hasNextElement())")
+$MT.addBody("{")
+$MT.addBody("int id = re.nextRecordId();")
+$MT.addBody("${class.shortName}StoreObject el = new ${class.shortName}StoreObject();")
+$MT.addBody("el.record2object(recordStore.getRecord(id));")
+$MT.addBody("}")
+$MT.addBody("return result;")
+$CTS.addMethod($MT, $tagDic.getPrefix())
+
+#************ retrieve2 **********#
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("RecordEnumeration")
+$MT.setName("retrieve2")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("${class.shortName}StoreObject")
+$FT.setName("o")
+$MT.addParameter($FT)
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("boolean")
+$FT.setName("sorted")
+$MT.addParameter($FT)
+$MT.addException("Exception")
+$MT.addBody("setFilter(o.getId());")
+$MT.addBody("return recordStore.enumerateRecords(this, null, false);")
+$CTS.addMethod($MT, $tagDic.getPrefix())
+
+#************ set/getFilter **********#
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("void")
+$MT.setName("setFilter")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("${class.shortName}StoreObject")
+$FT.setName("o")
+$MT.addParameter($FT)
+$MT.addBody("filter = o;")
+$CTS.addMethod($MT, $tagDic.getPrefix())
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("${class.shortName}StoreObject")
+$MT.setName("getFilter")
+$MT.addBody("return this.filter;")
+$CTS.addMethod($MT, $tagDic.getPrefix())
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("void")
+$MT.setName("setFilter")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("String")
+$FT.setName("id")
+$MT.addParameter($FT)
+$MT.addBody("this.filter = new ${class.shortName}StoreObject();")
+$MT.addBody("filter.setId(id);")
+$CTS.addMethod($MT, $tagDic.getPrefix())
+
+#************ getRecordID **********#
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("int")
+$MT.setName("getRecordID")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("${class.shortName}StoreObject")
+$FT.setName("o")
+$MT.addParameter($FT)
+$MT.addException("Exception")
+$MT.addBody("RecordEnumeration re = retrieve2(o, true);")
+$MT.addBody("if(re.hasNextElement()){")
+$MT.addBody("return re.nextRecordId();")
+$MT.addBody("}")
+$MT.addBody("return -1;")
+$CTS.addMethod($MT, $tagDic.getPrefix())
+
+#************ exists **********#
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("boolean")
+$MT.setName("exists")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("${class.shortName}StoreObject")
+$FT.setName("o")
+$MT.addParameter($FT)
+$MT.addException("Exception")
+$MT.addBody("return (getRecordID(o) < 0) ? false : true;")
+$CTS.addMethod($MT, $tagDic.getPrefix())
+
+#************ storeToString **********#
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("String")
+$MT.setName("storeToString")
+$MT.addBody("${class.shortName}StoreObject storeObject = new ${class.shortName}StoreObject();")
+$MT.addBody("String out = ${st}${st};")
+$MT.addBody("try {")
+$MT.addBody("RecordEnumeration re = recordStore.enumerateRecords(this, null, false);")
+$MT.addBody("while(re.hasNextElement()) {")
+$MT.addBody("try{")
+$MT.addBody("storeObject.record2object(re.nextRecord());")
+$MT.addBody("out = out+${st}\n${st}+storeObject.toString();")
+$MT.addBody("}catch(Exception e){System.out.println(e);}")
+$MT.addBody("}")
+$MT.addBody("return out;")
+$MT.addBody("} catch (RecordStoreException rse) {")
+$MT.addBody("rse.printStackTrace();")
+$MT.addBody("return rse.toString();")
+$MT.addBody("}")
+$CTS.addMethod($MT, $tagDic.getPrefix())
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("String")
+$MT.setName("storeToString")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("String")
+$FT.setName("id")
+$MT.addParameter($FT)
+$MT.addBody("this.setFilter(id);")
+$MT.addBody("${class.shortName}StoreObject storeObject = new ${class.shortName}StoreObject();")
+$MT.addBody("String out = ${st}${st};")
+$MT.addBody("try {")
+$MT.addBody("RecordEnumeration re = recordStore.enumerateRecords(this, null, false);")
+$MT.addBody("while(re.hasNextElement()) {")
+$MT.addBody("try{")
+$MT.addBody("storeObject.record2object(re.nextRecord());")
+$MT.addBody("out = out+${st}\n${st}+storeObject.toString();")
+$MT.addBody("}catch(Exception e){System.out.println(e);}")
+$MT.addBody("}")
+$MT.addBody("return out;")
+$MT.addBody("} catch (RecordStoreException rse) {")
+$MT.addBody("rse.printStackTrace();")
+$MT.addBody("return rse.toString();")
+$MT.addBody("}")
+$CTS.addMethod($MT, $tagDic.getPrefix())
+
+#************ getStoreObject **********#
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("${class.shortName}StoreObject")
+$MT.setName("getStoreObject")
+$MT.addBody("this.setFilter(${st}${class.shortName}StoreObject${st});")
+$MT.addBody("${class.shortName}StoreObject storeObject = new ${class.shortName}StoreObject();")
+$MT.addBody("try {")
+$MT.addBody("RecordEnumeration re = recordStore.enumerateRecords(this, null, false);")
+$MT.addBody("try{")
+$MT.addBody("if(re.hasNextElement()){")
+$MT.addBody("storeObject.record2object(re.nextRecord());")
+$MT.addBody("}")
+$MT.addBody("}catch(Exception e){System.out.println(e);}")
+$MT.addBody("} catch (RecordStoreException rse) {")
+$MT.addBody("rse.printStackTrace();")
+$MT.addBody("System.out.println(rse.toString());")
+$MT.addBody("}")
+$MT.addBody("if(storeObject== null) storeObject = new ${class.shortName}StoreObject();")
+$MT.addBody("return storeObject;")
+$CTS.addMethod($MT, $tagDic.getPrefix())
+
+## Add the store to the transformer's mobileClassTemplates
+$transformer.addMobileClassTemplate($CTS)
+
+
+#************ Generate MU.java **********#
+#set($MU = $vdoclet.makeBean("mobcon.ct.ClassTemplate"))
+$MU.setName("MU")
+$MU.setAccess("public")
+$MU.addImport("mobcon.message.*")
+$MU.addImport("javax.microedition.io.*")
+$MU.addImport("java.io.*")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setAccess("public static")
+$FT.setType("String")
+$FT.setName("CONNECTOR_URL")
+$FT.setValue("${st}$SERVERIP${st}")
+$MU.addField($FT, $tagDic.getPrefix())
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public static")
+$MT.setName("sendNetMessage")
+$MT.setType("void")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setName("o")
+$FT.setType("NetMessage")
+$MT.addParameter($FT)
+$MT.addBody("MessageHandler mh = new MessageHandler(true, CONNECTOR_URL, o);")
+$MT.addBody("mh.start();")
+$MU.addMethod($MT, $tagDic.getPrefix())
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public static")
+$MT.setName("getNetMessageResult")
+$MT.setType("NetMessage")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setName("o")
+$FT.setType("NetMessage")
+$MT.addParameter($FT)
+$MT.addBody("MessageHandler mh = new MessageHandler(false, CONNECTOR_URL, o);")
+$MT.addBody("NetMessage result = null;")
+$MT.addBody("mh.start();")
+$MT.addBody("result = mh.getResult();")
+$MT.addBody("return result;")
+$MU.addMethod($MT, $tagDic.getPrefix())
+$transformer.addMobileClassTemplate($MU)
+
+
+#************ Generate CTX.java **********#
+
+
+$CTX.addImport("mobcon.message.*")
+#*
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setAccess("public static")
+$FT.setType("String")
+$FT.setName("STR_EMPTY")
+$FT.setValue("${st}${st}")
+$CTX.addField($FT, $tagDic.getPrefix())
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setAccess("public static")
+$FT.setType("int")
+$FT.setName("REMOTE_NEVER")
+$FT.setValue("1")
+$CTX.addField($FT, $tagDic.getPrefix())
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setAccess("public static")
+$FT.setType("int")
+$FT.setName("REMOTE_ALWAYS")
+$FT.setValue("2")
+$CTX.addField($FT, $tagDic.getPrefix())
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setAccess("public static")
+$FT.setType("int")
+$FT.setName("REMOTE_AS_NEEDED")
+$FT.setValue("3")
+$CTX.addField($FT, $tagDic.getPrefix())
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setAccess("public static")
+$FT.setType("int")
+$FT.setName("REMOTE")
+$FT.setValue("3")
+$CTX.addField($FT, $tagDic.getPrefix())
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setName("CTX")
+$CTX.addMethod($MT, $tagDic.getPrefix())
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public static")
+$MT.setName("validate")
+$MT.setType("boolean")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setName("value")
+$FT.setType("int")
+$MT.addParameter($FT)
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setName("min")
+$FT.setType("int")
+$MT.addParameter($FT)
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setName("max")
+$FT.setType("int")
+$MT.addParameter($FT)
+$MT.addBegin("if((value < min) || (value > max)) return false;")
+$MT.addBegin("return true;")
+$CTX.addMethod($MT, $tagDic.getPrefix())
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public static")
+$MT.setName("validate")
+$MT.setType("boolean")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setName("value")
+$FT.setType("String")
+$MT.addParameter($FT)
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setName("min")
+$FT.setType("int")
+$MT.addParameter($FT)
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setName("max")
+$FT.setType("int")
+$MT.addParameter($FT)
+$MT.addBegin("value = noNull(value);")
+$MT.addBegin("return validate(value.length(), min, max);")
+$CTX.addMethod($MT, $tagDic.getPrefix())
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public static")
+$MT.setName("noNull")
+$MT.setType("String")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setName("s")
+$FT.setType("String")
+$MT.addParameter($FT)
+$MT.addBegin("return (s == null) ? STR_EMPTY : s;")
+$CTX.addMethod($MT, $tagDic.getPrefix())
+*#
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public static")
+$MT.setName("sendNetMessage")
+$MT.setType("void")
+$MT.addException("Exception")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setName("o")
+$FT.setType("NetMessage")
+$MT.addParameter($FT)
+$MT.addBegin("MU.sendNetMessage(o);")
+$CTX.addMethod($MT, $tagDic.getPrefix())
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public static")
+$MT.setName("getNetMessageResult")
+$MT.setType("NetMessage")
+$MT.addException("Exception")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setName("o")
+$FT.setType("NetMessage")
+$MT.addParameter($FT)
+$MT.addBegin("return MU.getNetMessageResult(o);")
+$CTX.addMethod($MT, $tagDic.getPrefix())
+##$transformer.addMobileClassTemplate($CTX)
+
+
+## Add sources to preverify.dat
+$PREVERIFY.add("mobcon.util.ByteArray ")
+$PREVERIFY.add("mobcon.message.NetMessage ");
+$PREVERIFY.add("mobcon.message.MessageHandler ");
+$PREVERIFY.add("mobcon.message.Storeable ");
+$PREVERIFY.add("mobcon.storeables.StoreableStringArray ");
+$PREVERIFY.add("mobcon.storeables.StoreableStringHashtable ");
+$PREVERIFY.add("mobcon.storeables.StoreableStringData ");
+
+## End concern-tag
+#end

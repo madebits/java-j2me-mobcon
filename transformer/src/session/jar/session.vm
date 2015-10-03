@@ -1,0 +1,577 @@
+#************************#
+#******** FIELDS ********#
+#************************#
+#set($StringUtils = $vdoclet.makeBean("org.apache.velocity.util.StringUtils"))
+#set($varMap = $vdoclet.makeBean("java.util.Hashtable"))
+#set($contextVec = $vdoclet.makeBean("java.util.Vector"))
+#set($st = '"')
+#****** Initialize the Dictionary ******#
+#set($tagDic = $transformer.getTagDic())
+
+
+## If the concern-tag (here @ses) is set, parse the file
+#set($tag = false)
+#set($tag = $class.getTag($tagDic.getPrefix()))
+#if ($tag)
+$transformer.setServerFileUsed(true)
+
+
+#************************#
+#******** MACROS ********#
+#************************#
+##
+##
+#****** Macro ses_gen_storeContext******
+# Function: Adds the storeContext method
+*#
+#macro(ses_gen_storeContext)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("storeContext")
+  $MT.addBody("try{")
+  $MT.addBody("context.put(${st}sessionId${st}, getMobileID());")
+  $MT.addBody("NetMessage message = new NetMessage();")
+  $MT.addBody("message.setCID(${st}$CID${st});")
+  $MT.addBody("message.setPID(${st}$PID${st});")
+  $MT.addBody("message.setIID(${st}$IID${st});")
+  $MT.addBody("message.setOID(${st}1${st});")
+  $MT.addBody("message.setData(context.object2record());")
+  $MT.addBody("CTX.sendNetMessage(message);")
+  $MT.addBody("} catch(Exception e){")
+  $MT.addBody("System.out.println(this.getClass().getName()+${st}: Error in storing context = ${st}+e);")
+  $MT.addBody("}")
+
+  $CT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro ses_gen_retrieveContext******
+# Function: Adds the retrieveContext method
+*#
+#macro(ses_gen_retrieveContext)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("retrieveContext")
+  $MT.addBody("context = new Context();")
+  $MT.addBody("try{")
+  $MT.addBody("NetMessage message = new NetMessage();")
+  $MT.addBody("message.setCID(${st}$CID${st});")
+  $MT.addBody("message.setPID(${st}$PID${st});")
+  $MT.addBody("message.setIID(${st}$IID${st});")
+  $MT.addBody("message.setOID(${st}2${st});")
+  $MT.addBody("message.setData(getMobileID().getBytes());")
+  $MT.addBody("NetMessage ret = new NetMessage();")
+  $MT.addBody("ret = CTX.getNetMessageResult(message);")
+  $MT.addBody("if(ret.getData() != null) context.record2object(ret.getData());")
+  $MT.addBody("} catch(Exception e){")
+  $MT.addBody("System.out.println(this.getClass().getName()+${st}: Error in retrieving context = ${st}+e);")
+  $MT.addBody("}")
+
+  $CT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro ses_change_appMethods ******
+# Function: Adds code to the startApp and destroyApp methods
+*#
+#macro(ses_change_appMethods)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("startApp")
+  $MT.addBegin("context = new Context();")
+  $MT.addBegin("retrieveContext();")
+  $MT.addBegin("if(context.get(${st}userName${st}) == null) context.put(${st}userName${st}, ${st}*${st});")
+  $MT.addBegin("if(context.get(${st}userPwd${st}) == null) context.put(${st}userPwd${st}, ${st}*${st});")
+
+  #foreach ($field in $contextVec)
+    $MT.addBegin("$field.name = context.get$StringUtils.capitalizeFirstLetter($field.name)();")
+  #end
+
+  #set($tag = false)
+  #set($tag = $class.getTag($tagDic.getTag("rememberLastDisplay")))
+  #if ($tag)
+    $MT.addBegin("if(context.get(${st}lastDisplay${st}) != null)")
+    $MT.addBegin("{")
+    $MT.addBegin("firstForm = (String)context.get(${st}lastDisplay${st});")
+    $MT.addBegin("}")
+  #end
+  $CT.addMethod($MT, $tagDic.getPrefix())
+
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("destroyApp")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("boolean")
+  $FT.setName("unconditional")
+  $MT.addParameter($FT)
+
+  #foreach ($field in $contextVec)
+    $MT.addBegin("if($field.name != context.All$StringUtils.capitalizeFirstLetter($field.name)) context.set$StringUtils.capitalizeFirstLetter($field.name)($field.name);")
+  #end
+  $MT.addBegin("storeContext();")
+
+  $CT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+#********************************* CONTEXT-OBJECT ***************************************#
+
+##
+##
+#****** Macro ses_contextobj_default_value******
+# Function: Generates the Default-Values (-1, *)
+# Note: Double and float are not yet supported by J2ME
+*#
+#macro(ses_contextobj_default_value $type $name)
+  ## default-value
+  #set($value = "null")
+
+  #if($type == "boolean")
+    #set($value = "false")
+  #end
+  #if($type == "byte")
+    #set($value = "0")
+  #end
+  #if($type == "char")
+    #set($value = "0")
+  #end
+  #if($type == "double")
+    #set($value = "-1")
+  #end
+  #if($type == "float")
+    #set($value = "-1")
+  #end
+  #if($type == "int")
+    #set($value = "-1")
+  #end
+  #if($type == "long")
+    #set($value = "-1")
+  #end
+  #if($type == "short")
+    #set($value = "-1")
+  #end
+  #if($type == "java.lang.String")
+    #set($value = '"*"')
+  #end
+
+  #set($allName = "All$StringUtils.capitalizeFirstLetter($name)")
+
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setAccess("public static final")
+  $FT.setType("$type")
+  $FT.setName("$allName")
+  $FT.setValue("$value")
+  $CONTEXT.addField($FT, $tagDic.getPrefix())
+#end
+
+##
+##
+#****** Macro ses_contextobj_meth_get******
+# Function: Generates the get-Method of the Field
+*#
+#macro(ses_contextobj_meth_get $type $name)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("$type")
+  $MT.setName("get$StringUtils.capitalizeFirstLetter($name)")
+  $MT.addEnd("return $name;")
+  $CONTEXT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro ses_contextobj_meth_set******
+# Function:
+# - Generates the set-Method of the Field
+*#
+#macro(ses_contextobj_meth_set $type $name $field)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("set$StringUtils.capitalizeFirstLetter($name)")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("$type")
+  $FT.setName("value")
+  $MT.addParameter($FT)
+  $MT.addEnd("$name = value;")
+  $CONTEXT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+#****** Macro ses_contextobj_gen_constructor******
+# Function: Generates the Constructors No-Arg / with Args
+*#
+#macro(ses_contextobj_gen_constructor $class)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setName("Context")
+
+  #foreach($field in $class.fields)
+    #set($tag = false)
+    #set($tag = $field.getTag($tagDic.getTag("addToSession")))
+    #if ($tag)
+      #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+      $FT.setName("$field.name")
+      $FT.setValue("All$StringUtils.capitalizeFirstLetter($field.name)")
+      $MT.addField($FT, $tagDic.getPrefix())
+    #end
+  #end
+  $MT.addBody("this.hash = new Hashtable();")
+  $CONTEXT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+##
+##
+#****** Macro ses_contextobj_gen_field******
+# Function:
+# - Generates the Fields
+*#
+#macro(ses_contextobj_gen_field $field)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setAccess("$field.getModifiers()")
+  $FT.setType("$field.getType()")
+  $FT.setName("$field.name")
+  $CONTEXT.addField($FT, $tagDic.getPrefix())
+
+  #ses_contextobj_default_value ($field.getType() $field.name)
+
+  #ses_contextobj_meth_get($field.getType() $field.name)
+
+  #ses_contextobj_meth_set($field.getType() $field.name $field)
+#end
+
+##
+##
+#****** Macro ses_contextobj_gen_object2record******
+# Function: Generates the object2record-Method, if there are Fields to store
+*#
+#macro(ses_contextobj_gen_object2record)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("byte[]")
+  $MT.setName("object2record")
+  $MT.addException("IOException")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("ByteArrayOutputStream")
+  $FT.setName("baos")
+  $FT.setValue("new ByteArrayOutputStream()")
+  $MT.addField($FT, $tagDic.getPrefix())
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("DataOutputStream")
+  $FT.setName("outputStream")
+  $FT.setValue("new DataOutputStream(baos)")
+  $MT.addField($FT, $tagDic.getPrefix())
+
+  $MT.addBody("byte[] out;")
+
+  $MT.addBody("outputStream.writeUTF((String)(this.hash).get(${st}sessionId${st}));")
+  $MT.addBody("outputStream.writeInt((this.hash).size());")
+  $MT.addBody("if(this.hash.size() > 0)")
+  $MT.addBody("{")
+  $MT.addBody("for (Enumeration e = hash.keys() ; e.hasMoreElements() ;) {")
+  $MT.addBody("String key = (String)e.nextElement();")
+  $MT.addBody("outputStream.writeUTF(key);")
+  $MT.addBody("outputStream.writeUTF((String)(hash.get(key)));")
+  $MT.addBody("}")
+  $MT.addBody("}")
+
+  #foreach ($storeField in $contextVec)
+    #if($storeField.getType() == "java.lang.String")
+      $MT.addBody("outputStream.writeUTF(this.get$StringUtils.capitalizeFirstLetter($storeField.name)());")
+    #elseif($storeField.getType() == "boolean")
+      $MT.addBody("outputStream.write$StringUtils.capitalizeFirstLetter($storeField.getType())(this.get$StringUtils.capitalizeFirstLetter($storeField.name)());")
+    #elseif($storeField.getType() == "byte")
+      $MT.addBody("outputStream.write$StringUtils.capitalizeFirstLetter($storeField.getType())(this.get$StringUtils.capitalizeFirstLetter($storeField.name)());")
+    #elseif($storeField.getType() == "char")
+      $MT.addBody("outputStream.write$StringUtils.capitalizeFirstLetter($storeField.getType())(this.get$StringUtils.capitalizeFirstLetter($storeField.name)());")
+    #elseif($storeField.getType() == "double")
+      $MT.addBody("outputStream.write$StringUtils.capitalizeFirstLetter($storeField.getType())(this.get$StringUtils.capitalizeFirstLetter($storeField.name)());")
+    #elseif($storeField.getType() == "float")
+      $MT.addBody("outputStream.write$StringUtils.capitalizeFirstLetter($storeField.getType())(this.get$StringUtils.capitalizeFirstLetter($storeField.name)());")
+    #elseif($storeField.getType() == "int")
+      $MT.addBody("outputStream.write$StringUtils.capitalizeFirstLetter($storeField.getType())(this.get$StringUtils.capitalizeFirstLetter($storeField.name)());")
+    #elseif($storeField.getType() == "long")
+      $MT.addBody("outputStream.write$StringUtils.capitalizeFirstLetter($storeField.getType())(this.get$StringUtils.capitalizeFirstLetter($storeField.name)());")
+    #elseif($storeField.getType() == "short")
+      $MT.addBody("outputStream.write$StringUtils.capitalizeFirstLetter($storeField.getType())(this.get$StringUtils.capitalizeFirstLetter($storeField.name)());")
+    #else
+      $MT.addBody("if($storeField.name == null){")
+      $MT.addBody("$storeField.name = new ${storeField.type}();")
+      $MT.addBody("}")
+      $MT.addBody("out = (this.get$StringUtils.capitalizeFirstLetter($storeField.name)()).object2record();")
+      $MT.addBody("outputStream.writeInt(out.length);")
+      $MT.addBody("outputStream.write(out);")
+    #end
+
+  #end
+  $MT.addEnd("return baos.toByteArray();")
+  $CONTEXT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro #ses_contextobj_gen_record2object******
+# Function: Generates the record2object-Method, if there are Fields to store
+*#
+#macro(ses_contextobj_gen_record2object)
+
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("record2object")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("byte[]")
+  $FT.setName("rec")
+  $MT.addParameter($FT)
+  $MT.addException("Exception")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("ByteArrayInputStream")
+  $FT.setName("bais")
+  $FT.setValue("new ByteArrayInputStream(rec)")
+  $MT.addField($FT, $tagDic.getPrefix())
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("DataInputStream")
+  $FT.setName("inputStream")
+  $FT.setValue("new DataInputStream(bais)")
+  $MT.addField($FT, $tagDic.getPrefix())
+
+  $MT.addBody("byte[] out;")
+
+  $MT.addBody("String sessionId = inputStream.readUTF();")
+  $MT.addBody("int hashSize = 0;")
+  $MT.addBody("hashSize = inputStream.readInt();")
+  $MT.addBody("int i;")
+  $MT.addBody("String key;")
+  $MT.addBody("String value;")
+  $MT.addBody("if(hashSize > 0)")
+  $MT.addBody("{")
+  $MT.addBody("for(i=0; i < hashSize; i++)")
+  $MT.addBody("{")
+  $MT.addBody("key = inputStream.readUTF();")
+  $MT.addBody("value = inputStream.readUTF();")
+  $MT.addBody("this.hash.put(key, value);")
+  $MT.addBody("}")
+  $MT.addBody("}")
+
+  #foreach ($storeField in $contextVec)
+    #if($storeField.getType() == "java.lang.String")
+      $MT.addBody("this.set$StringUtils.capitalizeFirstLetter($storeField.name)(inputStream.readUTF());")
+    #elseif($storeField.getType() == "boolean")
+      $MT.addBody("this.set$StringUtils.capitalizeFirstLetter($storeField.name)(inputStream.read$StringUtils.capitalizeFirstLetter($storeField.getType())());")
+    #elseif($storeField.getType() == "byte")
+      $MT.addBody("this.set$StringUtils.capitalizeFirstLetter($storeField.name)(inputStream.read$StringUtils.capitalizeFirstLetter($storeField.getType())());")
+    #elseif($storeField.getType() == "char")
+      $MT.addBody("this.set$StringUtils.capitalizeFirstLetter($storeField.name)(inputStream.read$StringUtils.capitalizeFirstLetter($storeField.getType())());")
+    #elseif($storeField.getType() == "double")
+      $MT.addBody("this.set$StringUtils.capitalizeFirstLetter($storeField.name)(inputStream.read$StringUtils.capitalizeFirstLetter($storeField.getType())());")
+    #elseif($storeField.getType() == "float")
+      $MT.addBody("this.set$StringUtils.capitalizeFirstLetter($storeField.name)(inputStream.read$StringUtils.capitalizeFirstLetter($storeField.getType())());")
+    #elseif($storeField.getType() == "int")
+      $MT.addBody("this.set$StringUtils.capitalizeFirstLetter($storeField.name)(inputStream.read$StringUtils.capitalizeFirstLetter($storeField.getType())());")
+    #elseif($storeField.getType() == "long")
+      $MT.addBody("this.set$StringUtils.capitalizeFirstLetter($storeField.name)(inputStream.read$StringUtils.capitalizeFirstLetter($storeField.getType())());")
+    #elseif($storeField.getType() == "short")
+      $MT.addBody("this.set$StringUtils.capitalizeFirstLetter($storeField.name)(inputStream.read$StringUtils.capitalizeFirstLetter($storeField.getType())());")
+    #else
+      $MT.addBody("out = new byte[inputStream.readInt()];")
+      $MT.addBody("inputStream.read(out);")
+      $MT.addBody("this.$storeField.name = new ${storeField.type}();")
+      $MT.addBody("(this.$storeField.name).record2object(out);")
+    #end
+  #end
+
+  $CONTEXT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro #ses_contextobj_gen_toString******
+# Function: Generates the toString() method
+*#
+#macro(ses_contextobj_gen_toString)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("String")
+  $MT.setName("toString")
+
+  #set($body = "return  ${st}CONTEXT: ${st}")
+  #foreach ($field in $contextVec)
+    #set($body = "${body}+this.${field.name}+${st} / ${st}")
+  #end
+
+  $MT.addBody("${body}+${st}${st};")
+  $CONTEXT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro #ses_contextobj_gen_get_set******
+# Function: Generates the get and set methods for the hash and the get and put methods
+*#
+#macro(ses_contextobj_gen_get_set)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("setHashtable")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("Hashtable")
+  $FT.setName("in")
+  $MT.addParameter($FT)
+  $MT.addBody("this.hash = in;")
+  $CONTEXT.addMethod($MT, $tagDic.getPrefix())
+
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("Hashtable")
+  $MT.setName("getHashtable")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $MT.addBody("return hash;")
+  $CONTEXT.addMethod($MT, $tagDic.getPrefix())
+
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("put")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("String")
+  $FT.setName("key")
+  $MT.addParameter($FT)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("String")
+  $FT.setName("value")
+  $MT.addParameter($FT)
+  $MT.addBody("this.hash.put(key, value);")
+  $CONTEXT.addMethod($MT, $tagDic.getPrefix())
+
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("String")
+  $MT.setName("get")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("String")
+  $FT.setName("key")
+  $MT.addParameter($FT)
+  $MT.addBody("return (String)(this.hash.get(key));")
+  $CONTEXT.addMethod($MT, $tagDic.getPrefix())
+
+#end
+
+#************************#
+#******* Workflow *******#
+#************************#
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setAccess("protected")
+$FT.setType("Context")
+$FT.setName("context")
+$CT.addField($FT, $tagDic.getPrefix())
+
+## Save last executed command in context
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("void")
+$MT.setName("commandAction")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("Command")
+$FT.setName("command")
+$MT.addParameter($FT)
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setType("Displayable")
+$FT.setName("screen")
+$MT.addParameter($FT)
+$MT.addEnd("context.put(${st}lastCommand${st},command.getLabel());")
+$CT.addMethod($MT, $tagDic.getPrefix())
+
+#set($CONTEXT = $vdoclet.makeBean("mobcon.ct.ClassTemplate"))
+$CONTEXT.addImport("mobcon.message.*")
+$CONTEXT.addImport("mobcon.storeables.*")
+$CONTEXT.addImport("javax.microedition.rms.*")
+$CONTEXT.addImport("java.io.DataOutputStream")
+$CONTEXT.addImport("java.io.ByteArrayOutputStream")
+$CONTEXT.addImport("java.io.IOException")
+$CONTEXT.addImport("java.io.ByteArrayInputStream")
+$CONTEXT.addImport("java.io.DataInputStream")
+$CONTEXT.addImport("java.io.EOFException")
+$CONTEXT.addImport("java.util.Hashtable")
+$CONTEXT.addImport("java.util.Enumeration")
+$CONTEXT.setAccess("public")
+$CONTEXT.setName("Context")
+$CONTEXT.addInterface("Storeable")
+#set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+$FT.setAccess("public")
+$FT.setType("Hashtable")
+$FT.setName("hash")
+$CONTEXT.addField($FT, $tagDic.getPrefix())
+
+## Add to all callMethods the context-info
+#foreach($field in $class.fields)
+  #if(($field.getType() == "javax.microedition.lcdui.Form") || ($field.getType() == "javax.microedition.lcdui.List"))
+
+    #set($tag = false)
+    #set($tag = $field.getTag($tagDic.getTag("noBackEntry")))
+    #if (!($tag))
+      #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+      $MT.setAccess("public")
+      $MT.setType("void")
+      $MT.setName("call$StringUtils.capitalizeFirstLetter($field.getName())")
+      $MT.addEnd("context.put(${st}lastDisplay${st}, ${st}$field.getName()${st});")
+      $CT.addMethod($MT, $tagDic.getPrefix())
+    #end
+  #end
+#end
+
+#************************#
+#*** Reading the Tags ***#
+#************************#
+#foreach ($field in $class.fields)
+  #if (!($field.getTags().isEmpty()))
+
+    #set($tag = false)
+    #set($tag = $field.getTag($tagDic.getTag("addToSession")))
+    #if ($tag)
+      #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+      $FT.setAccess("$field.getModifiers()")
+      $FT.setType("$field.type")
+      $FT.setName("$field.name")
+      $CT.addField($FT, $tagDic.getPrefix())
+
+      #ses_contextobj_gen_field($field)
+      $contextVec.addElement($field)
+    #end
+  ##endif
+  #end
+##endforeach
+#end
+
+#ses_gen_storeContext()
+#ses_gen_retrieveContext()
+#ses_change_appMethods()
+
+
+#********** Context-Object **********#
+#ses_contextobj_gen_constructor($class)
+#ses_contextobj_gen_object2record()
+#ses_contextobj_gen_record2object()
+
+#if($contextVec.size() != 0)
+  #ses_contextobj_gen_accessMeths()
+#end
+
+#ses_contextobj_gen_toString()
+#ses_contextobj_gen_get_set()
+
+## Add the context-Object to the transformer's mobileClassTemplates
+$transformer.addMobileClassTemplate($CONTEXT)
+
+## End concern-tag
+#end

@@ -1,0 +1,21 @@
+#foreach( $ejb in $ejbBundle.abstractEjbs )
+
+ABSTRACT EJB $ejb.srcClass.name
+#classGenerate( "  Remote-interface     " "remote-interface.vm" $ejb.remoteView.interface )
+#classGenerate( "  Local-interface      " "local-interface.vm" $ejb.localView.interface )
+#end
+#foreach( $ejb in $ejbBundle.ejbs )
+
+EJB $ejb.srcClass.name
+#classGenerate( "  Remote-interface     " "remote-interface.vm" $ejb.remoteView.interface )
+#classGenerate( "  Remote-home          " "remote-home.vm"      $ejb.remoteView.home )
+#classGenerate( "  Local-interface      " "local-interface.vm" $ejb.localView.interface )
+#classGenerate( "  Local-home           " "local-home.vm"      $ejb.localView.home )
+#if ($ejb.isPrimaryKeyRequired())
+#classGenerate( "  Primary-key class    " "key.vm"      $ejb.primaryKey )
+#end
+#classGenerate( "  CMP-1.1 sub-class    " "cmp11.vm"    $ejb.cmp11Class )
+#end##foreach( $ejb )
+
+DEPLOYMENT DESCRIPTORS
+  #bundleGenerate( "ejb-jar.vm" "META-INF/ejb-jar.xml" )

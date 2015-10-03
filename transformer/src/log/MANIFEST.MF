@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+
+name: Transformer
+Transformer-Name: Logging
+TID: 05
+IID: 01
+File-Name: log.vm
+Tag-File: log.tag
+
+name: Dependencies
+Use-Before: ALL
+Use-After: 

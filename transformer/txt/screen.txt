@@ -1,0 +1,320 @@
+########
+# @scr #
+########
+@addedFields : 
+ - String firstForm 	
+ Holds the name of the field, that will be the first display shown in this application
+ - Hashtable context	
+ In this Hashtable all needed values for the session-context are stored. 
+ (See Transformer session)
+ - String[] listElements	
+ Here are stored the elements of the last called List-Object. 
+ Must be accessed when evaluating the select-command of a List.
+ - Command nextCommand, Command backCommand, Command exitCommand	
+ If one of these is choosen as tag in a Form-Object.
+ - Command selectCommandXxx	
+ Inserted if a List-Object is tagged. (xxx is the field-name of the List)
+ - TextBox messageBox	
+ Needed for the method callMessageBox
+@addedMethods : 
+ - void callXxx(), for Form xxx	
+ Instantiates the Form-Object, adds provided Textfields, Buttons... 
+ Remembers in context, that this Form is called.
+ If this method is called, this Form will be dis-played as defined.
+ - void callXxx(), for List xxx	
+ Instantiates the List-Object, adds provided list-elements... 
+ Remembers in context, that this Form is called.
+ If this method is called, this List will be displayed as defined.
+ - void callXxx(), for TextField xxx	
+ Instantiates the TextField-Object, sets provided label and text 
+ If this method is called, this TextField will be configurated as defined. 
+ (Must only be appended to the Displayable)
+ - void callXxx(String text), for TextField xxx	
+ Like above, only with a new text.
+ - void callXxx(), for Command xxx	
+ Empty method or, when execute tag is set, with code from execute-tag. 
+ Will be called when the associated command is executed.
+ - void viewDisplay(String displayName)	
+ This method maps the field-name from Display-able fields to the callXxx-method, 
+ which calls this field. When this method is called, it will call the callXxx-method 
+ and change the display
+@changedMethods : 
+ - void startApp()	
+ To end: Initializes the application with the Display that is saved in firstForm
+ - void destroyApp( boolean unconditional)	
+ To begin: Puts the fields tagged with "addToSession" to the session-context 
+ and stores it on server-side
+ - void commandAction( Command command,  Displayable screen)	
+ All commands will be added as needed and defined in the tags.
+@serverOps : 
+ -
+
+
+alertTimeout
+------------
+@effects : 
+ Time in ms. So long allert will be shown
+@parameter : 
+  int
+
+
+string
+------
+@effects : 
+ Text that will be shown in the Object
+@parameter : 
+  String
+
+
+stringItem
+----------
+@effects : 
+ Adds this stringItem to the displayable
+@parameter : 
+  StringItem
+
+
+fontSize
+--------
+@effects : 
+ FontSize of the StringItem
+@parameter : 
+  fontsize
+
+
+fontStyle
+---------
+@effects : 
+ FontStyle of the StringItem
+@parameter : 
+  fontstyle
+
+
+maxSize
+-------
+@effects : 
+ Max size of this TextField
+@parameter : 
+  int
+
+
+command
+-------
+@effects : 
+ Adds a self-defined-button to the display. This command must be defined in code.
+ They are added and their callXxx (xxx is the com-mand-field name) are called when executed.
+@parameter : 
+  Command
+
+
+listElementArray
+----------------
+@effects : 
+ The elements, that will be shown in the list
+@parameter : 
+  String[]
+
+
+altText
+-------
+@effects : 
+ Alternativ text for an image
+@parameter : 
+  String
+
+
+execute
+-------
+@effects : 
+ Code-Block that will be executed, when the command is called. 
+ For complicated commands its bet-ter not to write in this tag, 
+ but to add an entire callXxx-method in code.
+@parameter : 
+  Code-Block
+
+
+label
+-----
+@effects : 
+ (Obligatoire) Label of this Object. 
+ Adds method callXxx (xxx is the field-name)
+@parameter : 
+  String
+
+
+commandAction
+-------------
+@effects : 
+ Executes the provided method, when something in the List is choosen
+@parameter : 
+  Method-name
+
+
+addCommand
+----------
+@effects : 
+ (Obligatoire for Command-Object)
+ Adds method callXxx (xxx is the field-name)
+@parameter : 
+  -
+
+
+exitButton
+----------
+@effects : 
+ Adds an exit-button to this display.
+@parameter : 
+ 
+
+nextButton
+----------
+@effects : 
+ Adds a next-button to this display. When the next-button is pushed, the Display will be shown	
+@parameter : 
+  Displayable
+
+
+mode
+----
+@effects : 
+ The mode for the Image-Object
+@parameter : 
+  mode
+
+
+alertNextScreen
+---------------
+@effects : 
+ Next Screen, when allert is dismissed
+@parameter : 
+  Displayable
+
+
+alertType
+---------
+@effects : 
+ Type of allert
+@parameter : 
+  Allert.TYPE
+
+
+choiceGroup
+-----------
+@effects : 
+ Adds a ChoiceGroup-Object to this displayable
+@parameter : 
+ 
+
+textField
+---------
+@effects : 
+ Adds one or more TextField-Objects to this display.
+ They are added and their callXxx (xxx is the field name) are called.
+@parameter : 
+  TextField
+
+
+height
+------
+@effects : 
+ Height of the Object
+@parameter : 
+  int
+
+
+image
+-----
+@effects : 
+ Adds an Image-Object to this form. Will always be the last Object added.
+@parameter : 
+  Image
+
+
+listElements
+------------
+@effects : 
+ The elements, that will be shown in the list
+@parameter : 
+  One or more String
+
+
+width
+-----
+@effects : 
+ Width of the Object
+@parameter : 
+  int
+
+
+imageItem
+---------
+@effects : 
+ Adds an ImageItem to this displayable
+@parameter : 
+  ImageItem
+
+
+constraints
+-----------
+@effects : 
+ Constraints of this TextField
+@parameter : 
+  constraints
+
+
+backButton
+----------
+@effects : 
+ Adds a back-button to this display. When the back-button is pushed, the Display will be shown
+@parameter : 
+  Displayable
+
+
+listType
+--------
+@effects : 
+ ListType of this Object
+@parameter : 
+  ListType
+
+
+alertImage
+----------
+@effects : 
+ This Image will be shown for Allert
+@parameter : 
+  Image
+
+
+layout
+------
+@effects : 
+ Layout of the ImageItem
+@parameter : 
+  layout
+
+
+alertText
+---------
+@effects : 
+  Text that will be shown when, allert appears
+@parameter : 
+  String
+
+
+firstDisplay
+------------
+@effects : 
+ This Displayable-Object will be the first Display shown
+@parameter : 
+  -
+
+
+fontFace
+--------
+@effects : 
+ FontFace of the StringItem
+@parameter : 
+  Font
+
+

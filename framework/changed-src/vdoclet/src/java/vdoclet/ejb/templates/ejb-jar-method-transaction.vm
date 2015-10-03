@@ -1,0 +1,7 @@
+## -*- sgml -*-
+#if( $method.getTagValue( "@ejb-transaction" ))
+        <container-transaction>
+#parse( "$templateRoot/ejb-jar-method-decl.vm" )
+            <trans-attribute>$method.getTagValue( "@ejb-transaction" )</trans-attribute>
+        </container-transaction>
+#end

@@ -1,0 +1,15 @@
+## -*- java -*-
+## @param $ejb EjbInfo
+##
+package ${ejb.localView.interface.package};
+
+/**
+ * Generated from $ejb.srcClass.name by vDoclet/EJB
+ */
+public interface ${ejb.localView.interface.shortName} extends ${ejb.localView.interface.interfaces} {
+#foreach( $method in $ejb.localView.interface.methods )
+
+#parse( "$templateRoot/method-signature.vm" )
+#end
+
+}

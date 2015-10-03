@@ -1,0 +1,50 @@
+## -*- java -*-
+## @param $ejb EjbInfo
+##
+package ${ejb.cmp11Class.package};
+
+/**
+ * Generated from $ejb.srcClass.name by vDoclet/EJB
+ */
+public class ${ejb.cmp11Class.shortName} extends ${ejb.srcClass.name} {
+
+    //---( Modification )---
+
+    private boolean isModified = false;
+
+    public boolean isModified() {
+        return this.isModified;
+    }
+
+    protected void makeDirty() {
+        this.isModified = true;
+    }
+#foreach( $field in $ejb.cmpFields )
+
+    //---( Field $field.name )---
+
+    public $field.type $field.name;
+
+    public $field.type ${field.getter.name}() {
+        return this.${field.name};
+    }
+
+    public void ${field.setter.name}( $field.type ${field.name} ) {
+        this.${field.name} = ${field.name};
+        makeDirty();
+    }
+#end
+
+    //--( Override ejbLoad/ejbStore )---
+
+    public void ejbLoad() {
+        super.ejbLoad();
+        this.isModified = false;
+    }
+
+    public void ejbStore() {
+        if (!this.isModified) return;
+        super.ejbStore();
+    }
+
+}

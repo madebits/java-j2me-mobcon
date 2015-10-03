@@ -1,0 +1,60 @@
+## -*- sgml -*-
+## @param $ejb EjbInfo
+##
+        <entity-descriptor>
+            <entity-cache>
+                <!-- @weblogic-cache-max -->
+                <max-beans-in-cache>$ejb.getTagValue("@weblogic-cache-max","100")</max-beans-in-cache>
+                <!-- @weblogic-cache-idle-timeout -->
+                <idle-timeout-seconds>$ejb.getTagValue("@weblogic-cache-idle-timeout","600")</idle-timeout-seconds>
+                <!-- @weblogic-cache-read-timeout -->
+                <read-timeout-seconds>$ejb.getTagValue("@weblogic-cache-read-timeout","0")</read-timeout-seconds>
+                <!-- @weblogic-cache-concurrency-strategy -->
+                <concurrency-strategy>$ejb.getTagValue("@weblogic-cache-concurrency-strategy","Database")</concurrency-strategy>
+            </entity-cache>
+            <lifecycle>
+                <!-- @weblogic-passivation-strategy -->
+                <passivation-strategy>$ejb.getTagValue("@weblogic-passivation-strategy","default")</passivation-strategy>
+            </lifecycle>
+            <persistence>
+#if( $ejb.getTagValue("@weblogic-isModified-method") )
+                <is-modified-method-name>$ejb.getTagValue("@weblogic-isModified-method")</is-modified-method-name>
+#end
+                <!-- @weblogic-entity-delay-updates -->
+                <delay-updates-until-end-of-tx>$ejb.getTagValue("@weblogic-entity-delay-updates","true")</delay-updates-until-end-of-tx>
+#if( $ejb.isCmpEntity() )
+                <!-- @weblogic-cmp-finders-load-bean -->
+                <finders-load-bean>$ejb.getTagValue("@weblogic-cmp-finders-load-bean","true")</finders-load-bean>
+                <!-- Each <persistence-type> is an available persistence scheme (in this case, only one) -->
+#if( "$ejbBundle.ejbVersion" == "1.1" )
+#set( $persistenceTypeVersion = "5.1.0" )
+#else
+#set( $persistenceTypeVersion = "6.0" )
+#end
+                <persistence-type>
+                    <type-identifier>WebLogic_CMP_RDBMS</type-identifier>
+                    <type-version>${persistenceTypeVersion}</type-version>
+                    <type-storage>META-INF/weblogic-cmp-rdbms-jar.xml</type-storage>
+                </persistence-type>
+                <!-- @weblogic-cmp-db-is-shared -->
+                <db-is-shared>$ejb.getTagValue("@weblogic-cmp-db-is-shared","true")</db-is-shared>
+                <!-- <persistence-use> selects one of the <persistence-types> to use -->
+                <persistence-use>
+                    <type-identifier>WebLogic_CMP_RDBMS</type-identifier>
+                    <type-version>${persistenceTypeVersion}</type-version>
+                </persistence-use>
+#end##if( $ejb.isCmpEntity() )
+            </persistence>
+            <entity-clustering>
+                <!-- @weblogic-clusterable -->
+                <home-is-clusterable>$ejb.getTagValue("@weblogic-clusterable","true")</home-is-clusterable>
+                <!-- @weblogic-cluster-load-algorithm -->
+#if( $ejb.getTagValue("@weblogic-cluster-load-algorithm") )
+                <home-load-algorithm>$ejb.getTagValue("@weblogic-cluster-load-algorithm")</home-load-algorithm>
+#end
+                <!-- @weblogic-cluster-call-router -->
+#if( $ejb.getTagValue("@weblogic-cluster-call-router") )
+                <home-call-router-class-name>$ejb.getTagValue("@weblogic-cluster-call-router")</home-call-router-class-name>
+#end
+            </entity-clustering>
+        </entity-descriptor>

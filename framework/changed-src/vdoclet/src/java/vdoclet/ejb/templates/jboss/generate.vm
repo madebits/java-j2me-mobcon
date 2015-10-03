@@ -1,0 +1,16 @@
+#if( "$ejbBundle.ejbVersion" == "1.1" )
+#set( $jbossVersion = $ejbBundle.getProperty("jboss.version","2.4") )
+#else
+#set( $jbossVersion = $ejbBundle.getProperty("jboss.version","3.0") )
+#end
+##
+#if( $jbossVersion == "2.4" )
+  #bundleGenerate( "jboss/jboss-2.4.vm" "META-INF/jboss.xml" )
+  #bundleGenerate( "jboss/jaws-2.4.vm" "META-INF/jaws.xml" )
+#elseif( $jbossVersion == "3.0" )
+  #bundleGenerate( "jboss/jboss-3.0.vm" "META-INF/jboss.xml" )
+  #bundleGenerate( "jboss/jaws-3.0.vm" "META-INF/jaws.xml" )
+  #bundleGenerate( "jboss/jbosscmp-jdbc-3.0.vm" "META-INF/jbosscmp-jdbc.xml" )
+#else
+  WARNING: unsupported JBoss version: "$jbossVersion"
+#end

@@ -1,0 +1,8 @@
+MIDlet-Name: RMSTest
+MIDlet-Version: 2.0
+MIDlet-Vendor: Sun Microsystems, Inc.
+MIDlet-Jar-URL: Test.jar
+MIDlet-Jar-Size: 26706
+MicroEdition-Profile: MIDP-2.0
+MicroEdition-Configuration: CLDC-1.0
+MIDlet-1: Testing,, Test

@@ -1,0 +1,295 @@
+#************************#
+#******** FIELDS ********#
+#************************#
+#set($StringUtils = $vdoclet.makeBean("org.apache.velocity.util.StringUtils"))
+#set($varMap = $vdoclet.makeBean("java.util.Hashtable"))
+#set($storeVec = $vdoclet.makeBean("java.util.Vector"))
+#set($st = '"')
+#****** Initialize the Dictionary ******#
+#set($tagDic = $transformer.getTagDic())
+
+
+## If the concern-tag (here @img) is set, parse the file
+#set($tag = false)
+#set($tag = $class.getTag("$tagDic.getPrefix()"))
+#if ($tag)
+$transformer.setServerFileUsed(true)
+
+#************************#
+#******** MACROS ********#
+#************************#
+##
+##
+#****** Macro img_gen_call_local ******
+# Function: Generates the call-method, that inits an Image-object. Image is on server-side
+*#
+#macro(img_gen_call_local $field)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("call$StringUtils.capitalizeFirstLetter($field.name)")
+
+  #set($tmp = ${varMap.get("name")})
+  $MT.addBegin("try{")
+  $MT.addBegin("$field.name = Image.createImage($tmp);")
+  $MT.addBody("}catch(Exception e){System.out.println(${st}Error in creating Image $field.name: ${st}+e); }")
+  $CT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro img_gen_call_remote ******
+# Function: Generates the call-method, that inits an Image-object. Image is on server-side
+*#
+#macro(img_gen_call_remote $field)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("void")
+  $MT.setName("call$StringUtils.capitalizeFirstLetter($field.name)")
+  $MT.addBegin("int width = 0;")
+  $MT.addBegin("int height = 0;")
+  $MT.addBegin("int maxcolors = 0;")
+  $MT.addBegin("int maxsize = 0;")
+
+  #if(${varMap.get("width")} != "0")
+    #set($tmp = $varMap.get("width"))
+    $MT.addBegin("width = $tmp;")
+  #else
+    $MT.addBegin("width = display.getBestImageWidth(display.ALERT);")
+  #end
+  #if(${varMap.get("height")} != "0")
+    #set($tmp = $varMap.get("height"))
+    $MT.addBegin("height = $tmp;")
+  #else
+    $MT.addBegin("height = display.getBestImageHeight(display.ALERT);")
+  #end
+  #if(${varMap.get("maxcolors")} != "0")
+    #set($tmp = $varMap.get("maxcolors"))
+    $MT.addBegin("maxcolors = $tmp;")
+  #else
+    $MT.addBegin("maxcolors = display.numColors();")
+  #end
+  #if(${varMap.get("maxsize")} != "0")
+    #set($tmp = $varMap.get("maxsize"))
+    $MT.addBegin("maxsize = $tmp;")
+  #else
+    $MT.addBegin("Runtime rt = java.lang.Runtime.getRuntime();")
+    $MT.addBegin("maxsize = (int)(rt.freeMemory());")
+  #end
+
+  #set($tmp = ${varMap.get("name")})
+  $MT.addBegin("$field.name = retrieveImage($tmp,width,height,maxcolors,maxsize,false);")
+  $CT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+##
+##
+#****** Macro img_gen_retrieveImageMethods ******
+# Function: Add the retrieveImage methods
+*#
+#macro(img_gen_retrieveImageMethods)
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("Image")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("String")
+  $FT.setName("imageName")
+  $MT.addParameter($FT)
+  $MT.setName("retrieveImage")
+  $MT.addBody("boolean dither = false;")
+  $MT.addBody("NetMessage message = new NetMessage();")
+  $MT.addBody("message.setCID(${st}$CID${st});")
+  $MT.addBody("message.setPID(${st}$PID${st});")
+  $MT.addBody("message.setIID(${st}$IID${st});")
+  $MT.addBody("message.setOID(${st}1${st});")
+  $MT.addBody("java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();")
+  $MT.addBody("java.io.DataOutputStream outputStream = new java.io.DataOutputStream(baos);")
+  $MT.addBody("try")
+  $MT.addBody("{")
+  $MT.addBody("outputStream.writeUTF(imageName);")
+  $MT.addBody("outputStream.writeInt(display.numColors());")
+  $MT.addBody("outputStream.writeInt(display.getBestImageWidth(display.ALERT));")
+  $MT.addBody("outputStream.writeInt(display.getBestImageHeight(display.ALERT));")
+  $MT.addBody("outputStream.writeBoolean(dither);")
+  $MT.addBody("Runtime rt = java.lang.Runtime.getRuntime();")
+  $MT.addBody("outputStream.writeInt((int)rt.freeMemory());")
+  $MT.addBody("}catch(Exception e){System.out.println(${st}Error in retrieveImage: ${st}+e); }")
+  $MT.addBody("message.setData(baos.toByteArray());")
+  $MT.addBody("NetMessage ret = new NetMessage();")
+  $MT.addBody("try{")
+  $MT.addBody("ret = CTX.getNetMessageResult(message);")
+  $MT.addBody("}catch(Exception e){System.out.println(${st}Error in retrieveImage: ${st}+e); }")
+  $MT.addBody("return Image.createImage(ret.data, 0, ret.data.length);")
+  $CT.addMethod($MT, $tagDic.getPrefix())
+
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("Image")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("String")
+  $FT.setName("imageName")
+  $MT.addParameter($FT)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("int")
+  $FT.setName("width")
+  $MT.addParameter($FT)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("int")
+  $FT.setName("height")
+  $MT.addParameter($FT)
+  $MT.setName("retrieveImage")
+  $MT.addBody("boolean dither = false;")
+  $MT.addBody("NetMessage message = new NetMessage();")
+  $MT.addBody("message.setCID(${st}$CID${st});")
+  $MT.addBody("message.setPID(${st}$PID${st});")
+  $MT.addBody("message.setIID(${st}$IID${st});")
+  $MT.addBody("message.setOID(${st}1${st});")
+  $MT.addBody("java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();")
+  $MT.addBody("java.io.DataOutputStream outputStream = new java.io.DataOutputStream(baos);")
+  $MT.addBody("try")
+  $MT.addBody("{")
+  $MT.addBody("outputStream.writeUTF(imageName);")
+  $MT.addBody("outputStream.writeInt(display.numColors());")
+  $MT.addBody("outputStream.writeInt(width);")
+  $MT.addBody("outputStream.writeInt(height);")
+  $MT.addBody("outputStream.writeBoolean(dither);")
+  $MT.addBody("Runtime rt = java.lang.Runtime.getRuntime();")
+  $MT.addBody("outputStream.writeInt((int)rt.freeMemory());")
+  $MT.addBody("}catch(Exception e){System.out.println(${st}Error in retrieveImage: ${st}+e); }")
+  $MT.addBody("message.setData(baos.toByteArray());")
+  $MT.addBody("NetMessage ret = new NetMessage();")
+  $MT.addBody("try{")
+  $MT.addBody("ret = CTX.getNetMessageResult(message);")
+  $MT.addBody("}catch(Exception e){System.out.println(${st}Error in retrieveImage: ${st}+e); }")
+  $MT.addBody("return Image.createImage(ret.data, 0, ret.data.length);")
+  $CT.addMethod($MT, $tagDic.getPrefix())
+
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setType("Image")
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("String")
+  $FT.setName("imageName")
+  $MT.addParameter($FT)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("int")
+  $FT.setName("width")
+  $MT.addParameter($FT)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("int")
+  $FT.setName("height")
+  $MT.addParameter($FT)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("int")
+  $FT.setName("numColors")
+  $MT.addParameter($FT)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("int")
+  $FT.setName("memory")
+  $MT.addParameter($FT)
+  #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+  $FT.setType("boolean")
+  $FT.setName("dither")
+  $MT.addParameter($FT)
+  $MT.setName("retrieveImage")
+  $MT.addBody("NetMessage message = new NetMessage();")
+  $MT.addBody("message.setCID(${st}$CID${st});")
+  $MT.addBody("message.setPID(${st}$PID${st});")
+  $MT.addBody("message.setIID(${st}$IID${st});")
+  $MT.addBody("message.setOID(${st}1${st});")
+  $MT.addBody("java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();")
+  $MT.addBody("java.io.DataOutputStream outputStream = new java.io.DataOutputStream(baos);")
+  $MT.addBody("try")
+  $MT.addBody("{")
+  $MT.addBody("outputStream.writeUTF(imageName);")
+  $MT.addBody("outputStream.writeInt(numColors);")
+  $MT.addBody("outputStream.writeInt(width);")
+  $MT.addBody("outputStream.writeInt(height);")
+  $MT.addBody("outputStream.writeBoolean(dither);")
+  $MT.addBody("outputStream.writeInt(memory);")
+  $MT.addBody("}catch(Exception e){System.out.println(${st}Error in retrieveImage: ${st}+e); }")
+  $MT.addBody("message.setData(baos.toByteArray());")
+  $MT.addBody("NetMessage ret = new NetMessage();")
+  $MT.addBody("try{")
+  $MT.addBody("ret = CTX.getNetMessageResult(message);")
+  $MT.addBody("}catch(Exception e){System.out.println(${st}Error in retrieveImage: ${st}+e); }")
+  $MT.addBody("return Image.createImage(ret.data, 0, ret.data.length);")
+  $CT.addMethod($MT, $tagDic.getPrefix())
+#end
+
+
+#************************#
+#******* Workflow *******#
+#************************#
+#* Init the startApp method *#
+#set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+$MT.setAccess("public")
+$MT.setType("void")
+$MT.setName("startApp")
+$MT.addBegin("int width = 0;")
+$MT.addBegin("int height = 0;")
+$MT.addBegin("int maxcolors = 0;")
+$MT.addBegin("int maxsize = 0;")
+$CT.addMethod($MT, $tagDic.getPrefix())
+
+#************************#
+#*** Reading the Tags ***#
+#************************#
+#foreach ($field in $class.fields)
+
+  $varMap.put("width", "0")
+  $varMap.put("height", "0")
+  $varMap.put("name", "")
+  $varMap.put("maxcolors", "0")
+  $varMap.put("maxsize", "0")
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("width")))
+  #if ($tag)
+    $varMap.put("width", $tag.value)
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("height")))
+  #if ($tag)
+    $varMap.put("height", $tag.value)
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("maxcolors")))
+  #if ($tag)
+    $varMap.put("maxcolors", $tag.value)
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("maxsize")))
+  #if ($tag)
+    $varMap.put("maxsize", $tag.value)
+  #end
+
+  #set($tag = false)
+  #set($tag = $field.getTag($tagDic.getTag("name")))
+  #if ($tag)
+    #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+    $FT.setAccess("$field.getModifiers()")
+    $FT.setType("Image")
+    $FT.setName("$field.name")
+    $CT.addField($FT, $tagDic.getPrefix())
+    $varMap.put("name", $tag.value)
+
+    #set($tag = false)
+    #set($tag = $field.getTag($tagDic.getTag("local")))
+    #if ($tag)
+      #img_gen_call_local($field)
+    #else
+      #img_gen_call_remote($field)
+    #end
+  #end
+#end
+
+#img_gen_retrieveImageMethods()
+
+## End concern-tag
+#end

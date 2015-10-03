@@ -1,0 +1,38 @@
+## -*- sgml -*-
+## @param EjbBundle $ejbBundle
+##
+<?xml version="1.0"?>
+<!DOCTYPE weblogic-rdbms-jar PUBLIC
+          "-//BEA Systems, Inc.//DTD WebLogic 6.0.0 EJB 1.1 RDBMS Persistence//EN"
+          "http://www.bea.com/servers/wls600/dtd/weblogic-rdbms11-persistence-600.dtd">
+
+<weblogic-rdbms-jar>
+#foreach( $ejb in $ejbBundle.ejbs )
+#if( $ejb.isCmpEntity() )
+    <weblogic-rdbms-bean>
+        <ejb-name>$ejb.name</ejb-name>
+        <data-source-name>$ejbBundle.getProperty("datasource")</data-source-name>
+        <table-name>$ejb.getTagValue("@ejb-cmp-table")</table-name>
+#foreach( $field in $ejb.cmpFields )
+        <field-map>
+            <cmp-field>$field.name</cmp-field>
+            <dbms-column>$field.getTagValue("@ejb-cmp-column")</dbms-column>
+        </field-map>
+#end##foreach( $field in $ejb.cmpFields )
+#foreach( $method in $ejb.remoteView.home.methods )
+#if( $method.name.startsWith("find") && $method.name != "findByPrimaryKey" )
+        <finder>
+            <finder-name>$method.name</finder-name>
+#foreach( $param in $method.parameters )
+            <finder-param>$param.type</finder-param>
+#end##foreach( param )
+            <finder-query><![CDATA[$method.getTagValue("@weblogic-finder-query")]]></finder-query>
+        </finder>
+#end##if( finder method )
+#end##foreach( method )
+        <!-- @weblogic-enable-tuned-updates -->
+        <enable-tuned-updates>$ejb.getTagValue("@weblogic-enable-tuned-updates","true")</enable-tuned-updates>
+    </weblogic-rdbms-bean>
+#end##if( isCmpEntity() )
+#end##foreach ejb
+</weblogic-rdbms-jar>

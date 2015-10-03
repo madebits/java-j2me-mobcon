@@ -1,0 +1,85 @@
+## -*- sgml -*-
+## @param EjbBundle $ejbBundle
+##
+<?xml version="1.0"?>
+<!DOCTYPE weblogic-ejb-jar PUBLIC 
+          "-//BEA Systems, Inc.//DTD WebLogic 6.0.0 EJB//EN"
+          "http://www.bea.com/servers/wls600/dtd/weblogic-ejb-jar.dtd">
+
+<weblogic-ejb-jar>
+#foreach( $ejb in $ejbBundle.ejbs )
+
+    <weblogic-enterprise-bean>
+        <ejb-name>$ejb.name</ejb-name>
+#if( $ejb.isEntity() )
+#parse( "$templateRoot/weblogic/weblogic-ejb-jar-entity.vm" )
+#elseif( $ejb.isSession() )
+#if( $ejb.getTagValue( "@ejb-session-type", "Stateless" ) == "Stateless" )
+#parse( "$templateRoot/weblogic/weblogic-ejb-jar-stateless.vm" )
+#else
+#parse( "$templateRoot/weblogic/weblogic-ejb-jar-stateful.vm" )
+#end##if( "@ejb-session-type" )
+#elseif( $ejb.isMessageDriven() )
+#parse( "$templateRoot/weblogic/weblogic-ejb-jar-message.vm" )
+#end##if( isEntity() / isSession() )
+        <transaction-descriptor>
+            <!-- @weblogic-transaction-timeout -->
+            <trans-timeout-seconds>$ejb.getTagValue("@weblogic-transaction-timeout","30")</trans-timeout-seconds>
+        </transaction-descriptor>
+        <reference-descriptor>
+#foreach( $ref in $ejb.getTags("@ejb-resource-ref") )
+            <resource-description>
+                <res-ref-name>$ref.getWord(0)</res-ref-name>
+                <jndi-name>$ref.getWord(3)</jndi-name>
+            </resource-description>
+#end##foreach( $ref )
+            <!--( TODO: resource-env-description* )-->
+#foreach( $ejbRef in $ejb.getTags("@ejb-ref") )
+            <ejb-reference-description>
+                <ejb-ref-name>$ejbRef.getWord(0)</ejb-ref-name>
+#if( $ejbBundle.getEjb( "$ejbRef.getWord(1)" ) )
+#set( $otherEjb = $ejbBundle.getEjb( "$ejbRef.getWord(1)" ))
+                <!-- reference to $otherEjb.name -->
+                <jndi-name>$otherEjb.remoteView.home.jndiName</jndi-name>
+#else
+                <!-- unable to resolve resource reference (@ejb-ref) to "$ejbRef.getWord(1)" -->
+#end##if
+            </ejb-reference-description>
+#end##foreach( $ejbRef )
+#foreach( $ejbRef in $ejb.getTags("@ejb-local-ref") )
+            <ejb-local-reference-description>
+                <ejb-ref-name>$ejbRef.getWord(0)</ejb-ref-name>
+#if( $ejbBundle.getEjb( "$ejbRef.getWord(1)" ) )
+#set( $otherEjb = $ejbBundle.getEjb( "$ejbRef.getWord(1)" ))
+                <!-- reference to $otherEjb.name -->
+                <jndi-name>$otherEjb.localView.home.jndiName</jndi-name>
+#else
+                <!-- unable to resolve resource reference (@ejb-ref) to "$ejbRef.getWord(1)" -->
+#end##if
+            </ejb-local-reference-description>
+#end##foreach( $ejbRef )
+        </reference-descriptor>
+        <!-- @weblogic-call-by-reference -->
+        <enable-call-by-reference>$ejb.getTagValue("@weblogic-call-by-reference","true")</enable-call-by-reference>
+#if( $ejb.getTagValue("@weblogic-run-as-identity-principal") )
+        <run-as-identity-principal>$ejb.getTagValue("@weblogic-run-as-identity-principal")</run-as-identity-principal>
+#end## identity-principal
+#if( $ejb.remoteView )
+        <jndi-name>$ejb.remoteView.home.jndiName</jndi-name>
+#end
+#if( $ejb.localView )
+        <local-jndi-name>$ejb.localView.home.jndiName</local-jndi-name>
+#end
+    </weblogic-enterprise-bean>
+#end##foreach( $ejb )
+#foreach( $role in $ejbBundle.securityRoles )
+#if( $ejbBundle.getProperty( "security.role.$role" ))
+
+    <security-role-assignment>
+        <role-name>$role</role-name>
+        <principal-name>$ejbBundle.getProperty( "security.role.$role" )</principal-name>
+    </security-role-assignment>
+#end
+#end##foreach( $role )
+
+</weblogic-ejb-jar>

@@ -1,0 +1,38 @@
+## -*- sgml -*-
+## @param $ejbBundle.ejbs Map(String name => EjbInfo)
+##
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE jaws PUBLIC
+          "-//JBoss//DTD JAWS 2.4//EN"
+          "http://www.jboss.org/j2ee/dtd/jaws_2_4.dtd">
+<jaws>
+    <datasource>$ejbBundle.getProperty("datasource")</datasource>
+    <type-mapping>$ejbBundle.getProperty("jboss.type-mapping")</type-mapping>
+
+    <enterprise-beans>
+#foreach( $ejb in $ejbBundle.ejbs )
+#if( $ejb.isCmpEntity() )
+        <entity>
+            <ejb-name>$ejb.name</ejb-name>
+#foreach( $field in $ejb.cmpFields )
+            <cmp-field>
+                <field-name>$field.name</field-name>
+                <column-name>$field.getTagValue("@ejb-cmp-column")</column-name>
+            </cmp-field>
+#end##foreach( $field )
+#foreach( $method in $ejb.remoteView.home.methods )
+#if( $method.name.startsWith("find") && $method.name != "findByPrimaryKey" )
+            <finder>
+                <name>$method.name</name>
+                <query><![CDATA[$method.getTagValue("@jboss-cmp-query")]]></query>
+                <order>$!method.getTagValue("@jboss-cmp-query-order")</order>
+            </finder>
+#end##if
+#end##foreach( $method )
+            <table-name>$ejb.getTagValue("@ejb-cmp-table")</table-name>
+            <time-out>$ejb.getTagValue("@jboss-time-out","10")</time-out>
+        </entity>
+#end##if( $ejb.isCmpEntity() )
+#end##foreach( $ejb )
+    </enterprise-beans>
+</jaws>

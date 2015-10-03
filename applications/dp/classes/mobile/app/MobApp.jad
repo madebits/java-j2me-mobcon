@@ -1,0 +1,8 @@
+MIDlet-Name: MobConApp
+MIDlet-Version: 2.0
+MIDlet-Vendor: Sun Microsystems, Inc.
+MIDlet-Jar-URL: D:\Dev\Dipl\mobcon\applications\dp\classes\mobile\app\MobApp.jar
+MIDlet-Jar-Size: 28264
+MicroEdition-Profile: MIDP-2.0
+MicroEdition-Configuration: CLDC-1.0
+MIDlet-1: MobApp,, MobApp

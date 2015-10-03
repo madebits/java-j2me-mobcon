@@ -1,0 +1,29 @@
+## -*- java -*-
+## @param $ejb EjbInfo
+##
+package ${ejb.localView.home.package};
+
+import javax.ejb.EJBException;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+
+/**
+ * Generated from $ejb.srcClass.name by vDoclet/EJB
+ */
+public interface ${ejb.localView.home.shortName} extends javax.ejb.EJBLocalHome {
+#foreach( $method in $ejb.localView.home.methods )
+
+#parse( "$templateRoot/method-signature.vm" )
+#end
+
+    //---( JNDI Lookup )---
+
+    final static String JNDI_NAME = "$ejb.localView.home.jndiName";
+
+    static class Finder {
+        public static ${ejb.localView.home.shortName} lookup() throws NamingException {
+            return (${ejb.localView.home.shortName}) new InitialContext().lookup(JNDI_NAME);
+        }
+    }
+
+}

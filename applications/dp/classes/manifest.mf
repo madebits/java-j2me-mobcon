@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Ant-Version: Apache Ant 1.5.3 
+Created-By: 1.4.1_02-b06 (Sun Microsystems Inc.)
+MIDlet-Name: MobConApp
+MIDlet-Version: 2.0
+MIDlet-Vendor: Sun Microsystems, Inc.
+

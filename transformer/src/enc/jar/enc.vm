@@ -1,0 +1,128 @@
+## @param vdoclet.docinfo.DocInfo $docInfo
+## @param vdoclet.Generator $vdoclet
+## @param ClassTemplate $CT from Control.vm
+## $docInfo is Class vdoclet.docinfo.DocInfo $docInfo
+## $vdoclet is Class vdoclet.Generator
+##
+#set($StringUtils = $vdoclet.makeBean("org.apache.velocity.util.StringUtils"))
+#set($varMap = $vdoclet.makeBean("java.util.Hashtable"))
+#set($storeVec = $vdoclet.makeBean("java.util.Vector"))
+#set($st = '"')
+##
+#****** Initialize the Dictionary ******#
+#set($tagDic = $transformer.getTagDic())
+
+##If the concern-tag (here @scr) is set, parse the file
+#set($tag = false)
+#set($tag = $class.getTag("$tagDic.getPrefix()"))
+#if ($tag)
+  $PREVERIFY.add("org.bouncycastle.crypto.StreamBlockCipher")
+  $PREVERIFY.add("org.bouncycastle.crypto.StreamCipher")
+  $PREVERIFY.add("org.bouncycastle.crypto.engines.AESLightEngine")
+  $PREVERIFY.add("org.bouncycastle.crypto.modes.CFBBlockCipher")
+  $PREVERIFY.add("org.bouncycastle.crypto.params.KeyParameter")
+  $PREVERIFY.add("org.bouncycastle.crypto.BlockCipher")
+  $PREVERIFY.add("org.bouncycastle.crypto.DataLengthException")
+  $PREVERIFY.add("org.bouncycastle.crypto.RuntimeCryptoException")
+  $PREVERIFY.add("org.bouncycastle.crypto.CipherParameters")
+  $PREVERIFY.add("org.bouncycastle.crypto.params.ParametersWithIV")
+
+  $CT.addImport("org.bouncycastle.crypto.StreamBlockCipher")
+  $CT.addImport("org.bouncycastle.crypto.StreamCipher")
+  $CT.addImport("org.bouncycastle.crypto.engines.AESLightEngine")
+  $CT.addImport("org.bouncycastle.crypto.modes.CFBBlockCipher")
+  $CT.addImport("org.bouncycastle.crypto.params.KeyParameter")
+  $CT.addImport("org.bouncycastle.crypto.BlockCipher")
+  $CT.addImport("org.bouncycastle.crypto.DataLengthException")
+  $CT.addImport("org.bouncycastle.crypto.RuntimeCryptoException")
+  $CT.addImport("org.bouncycastle.crypto.CipherParameters")
+  $CT.addImport("org.bouncycastle.crypto.params.ParametersWithIV")
+
+#*
+  #set($DPID = $ALLTRANSFORMERS.get("Data Persistence"))
+
+  #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+  $MT.setAccess("public")
+  $MT.setName("MobConMain")
+  $MT.addEnd("((DataPersistenceTrans) ca.getTransformerApp(${st}${DPID}${st})).setEncrypt(true);")
+  $MCM.addMethod($MT, $tagDic.getPrefix())
+*#
+
+  #set($tag = false)
+  #set($tag = $class.getTag($tagDic.getTag("encrypt")))
+  #if ($tag)
+
+    #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+    $MT.setAccess("protected")
+    $MT.setType("byte[]")
+    $MT.setName("encrypt")
+    #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+    $FT.setType("byte[]")
+    $FT.setName("in")
+    $MT.addParameter($FT)
+    $MT.addBody("byte[] bkey = mobcon.util.ByteArray.stringToByteArray(${st}$KEY${st});")
+    $MT.addBody("KeyParameter key = new KeyParameter(bkey);")
+    $MT.addBody("AESLightEngine blockCipher = new AESLightEngine();")
+    $MT.addBody("CFBBlockCipher cfbCipher = new CFBBlockCipher(blockCipher, 8);")
+    $MT.addBody("StreamCipher streamCipher = new StreamBlockCipher(cfbCipher);")
+    $MT.addBody("byte[] dataBytes = new byte[in.length];")
+    $MT.addBody("streamCipher.init(true, key);")
+    $MT.addBody("streamCipher.processBytes(in, 0, in.length, dataBytes, 0);")
+    $MT.addBody("return dataBytes;")
+    $CT.addMethod($MT, $tagDic.getPrefix())
+
+    #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+    $MT.setAccess("protected")
+    $MT.setType("byte[]")
+    $MT.setName("decrypt")
+    #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+    $FT.setType("byte[]")
+    $FT.setName("in")
+    $MT.addParameter($FT)
+    $MT.addBody("byte[] bkey = mobcon.util.ByteArray.stringToByteArray(${st}$KEY${st});")
+    $MT.addBody("KeyParameter key = new KeyParameter(bkey);")
+    $MT.addBody("AESLightEngine blockCipher = new AESLightEngine();")
+    $MT.addBody("CFBBlockCipher cfbCipher = new CFBBlockCipher(blockCipher, 8);")
+    $MT.addBody("StreamCipher streamCipher = new StreamBlockCipher(cfbCipher);")
+    $MT.addBody("byte[] dataBytes = new byte[in.length];")
+    $MT.addBody("streamCipher.init(false, key);")
+    $MT.addBody("streamCipher.processBytes(in, 0, in.length, dataBytes, 0);")
+    $MT.addBody("return dataBytes;")
+    $CT.addMethod($MT, $tagDic.getPrefix())
+
+    #foreach($MT in $MAINCT.getMethods())
+      #foreach($Code in $MT.getAllSnippets())
+        #if($Code.getTag("encrypt"))
+          #set($ix = $Code.getCode().indexOf("="))
+          #set($LHS = $Code.getCode().substring(0,$ix))
+          #set($LHS = $LHS.trim())
+          #set($ix = $ix + 1)
+          #set($RHS = $Code.getCode().substring($ix, $Code.getCode().indexOf(";")))
+          #set($RHS = $RHS.trim())
+
+          ##$Code.addCode("// EMC *$LHS*, *$RHS*")
+          ##$Code.addCode("$LHS = encrypt($LHS);")
+          $Code.setCode("$LHS = encrypt($RHS);")
+          $MT.setTag($tagDic.getPrefix())
+        #end
+
+        #if($Code.getTag("decrypt"))
+          #set($ix = $Code.getCode().indexOf("="))
+          #set($LHS = $Code.getCode().substring(0,$ix))
+          #set($LHS = $LHS.trim())
+          #set($ix = $ix + 1)
+          #set($RHS = $Code.getCode().substring($ix, $Code.getCode().indexOf(";")))
+          #set($RHS = $RHS.trim())
+
+          ##$Code.addCode("// DEC *$LHS*, *$RHS*")
+          ##$Code.addCode("$LHS = decrypt($LHS);")
+          $Code.setCode("$LHS = decrypt($RHS);")
+          $MT.setTag($tagDic.getPrefix())
+        #end
+      #end
+    #end
+
+  #end
+
+## End concern-tag
+#end

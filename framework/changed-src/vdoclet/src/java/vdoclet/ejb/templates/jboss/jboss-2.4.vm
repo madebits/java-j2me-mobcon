@@ -1,0 +1,39 @@
+## -*- sgml -*-
+## @param $ejbBundle.ejbs Map(String name => EjbInfo)
+##
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE jboss PUBLIC
+          "-//JBoss//DTD JBOSS 2.4//EN"
+          "http://www.jboss.org/j2ee/dtd/jboss_2_4.dtd">
+<jboss>
+    <enterprise-beans>
+#foreach( $ejb in $ejbBundle.ejbs )
+        <$ejb.type>
+            <ejb-name>$ejb.name</ejb-name>
+#if( $ejb.remoteView )
+            <jndi-name>$ejb.remoteView.home.jndiName</jndi-name>
+#end##if( $ejb.remoteView )
+#if( $ejb.isMessageDriven() )
+            <destination-jndi-name>$ejb.getTagValue("@ejb-mdb-jndi")</destination-jndi-name>
+#end##if( $ejb.isMessageDriven() )
+#foreach( $ejbRef in $ejb.getTags("@ejb-ref") )
+            <ejb-ref>
+                <ejb-ref-name>$ejbRef.getWord(0)</ejb-ref-name>
+#if( $ejbBundle.getEjb( $ejbRef.getWord(1) ) )
+#set( $otherEjb = $ejbBundle.getEjb( $ejbRef.getWord(1) ))
+                <jndi-name>$otherEjb.remoteView.home.jndiName</jndi-name>
+#else
+                <!-- unable to resolve "$ejbRef.getWord(1)" -->
+#end##if
+            </ejb-ref>
+#end##foreach( $ejbRef )
+#foreach( $resRef in $ejb.getTags("@ejb-resource-ref") )
+            <resource-ref>
+                <res-ref-name>$resRef.getWord(0)</res-ref-name>
+                <resource-name>$resRef.getWord(3)</resource-name>
+            </resource-ref>
+#end##foreach( $resRef )
+        </$ejb.type>
+#end##foreach( $ejb )
+    </enterprise-beans>
+</jboss>

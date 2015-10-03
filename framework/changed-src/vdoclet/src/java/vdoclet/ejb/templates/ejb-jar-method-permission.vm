@@ -1,0 +1,9 @@
+## -*- sgml -*-
+#if( $method.getTags( "@ejb-permission" ).size() > 0 )
+        <method-permission>
+#foreach( $permTag in $method.getTags( "@ejb-permission" ))
+            <role-name>$permTag</role-name>
+#end##foreach( $permTag )
+#parse( "$templateRoot/ejb-jar-method-decl.vm" )
+        </method-permission>
+#end

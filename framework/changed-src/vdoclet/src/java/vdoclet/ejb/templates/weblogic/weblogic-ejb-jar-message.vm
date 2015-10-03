@@ -1,0 +1,17 @@
+## -*- sgml -*-
+## @param $ejb EjbInfo
+##
+        <message-driven-descriptor>
+            <pool>
+                <!-- @weblogic-session-pool-max -->
+                <max-beans-in-free-pool>$ejb.getTagValue("@weblogic-session-pool-max","1000")</max-beans-in-free-pool>
+                <!-- @weblogic-session-pool-initial -->
+                <initial-beans-in-free-pool>$ejb.getTagValue("@weblogic-session-pool-initial","0")</initial-beans-in-free-pool>
+            </pool>
+            <destination-jndi-name>$ejb.getTagValue("@ejb-mdb-jndi")</destination-jndi-name>
+            <!--( TODO: initial-context-factory? )--> 
+            <!--( TODO: provider-url? )--> 
+            <!--( TODO: connection-factory-jndi-name? )--> 
+            <!--( TODO: jms-polling-interval-seconds? )--> 
+            <!--( TODO: jms-client-id? )-->
+        </message-driven-descriptor>

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+
+<!-- Comment -->
+<application>
+  <transformer>    
+    <encryption>
+      <generatekey>true</generatekey>
+    </encryption>
+    <persistence>
+      <server>
+        <ip>socket://localhost:1079</ip>
+      </server>
+    </persistence>
+  </transformer>
+</application>

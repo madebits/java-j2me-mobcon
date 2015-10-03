@@ -1,0 +1,97 @@
+## -*- sgml -*-
+## @param $ejbBundle.ejbs Map(String name => EjbInfo)
+##
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE jbosscmp-jdbc PUBLIC
+          "-//JBoss//DTD JBOSSCMP-JDBC 3.0//EN"
+          "http://www.jboss.org/j2ee/dtd/jbosscmp-jdbc_3_0.dtd">
+
+<jbosscmp-jdbc>
+    <defaults>
+        <datasource>$ejbBundle.getProperty("datasource")</datasource>
+        <datasource-mapping>$ejbBundle.getProperty("jboss.type-mapping")</datasource-mapping>
+##TODO        <create-table />
+##TODO        <remove-table />
+##TODO        <read-only />
+##TODO        <time-out />
+##TODO        <row-locking />
+##TODO        <pk-constraint />
+##TODO        <fk-constraint />
+##TODO        <preferred-relation-mapping />
+##TODO        <read-ahead />
+##TODO        <list-cache-max />
+    </defaults>
+    <enterprise-beans>
+#foreach( $ejb in $ejbBundle.ejbs )
+#if( $ejb.isCmpEntity() )
+        <entity>
+            <ejb-name>$ejb.name</ejb-name>
+##TODO      <datasource />
+##TODO      <datasource-mapping />
+##TODO      <create-table />
+##TODO      <remove-table />
+##TODO      <read-only />
+#if( $ejb.getTagValue("@jboss-time-out") )
+            <time-out>$ejb.getTagValue("@jboss-time-out")</time-out>
+#end
+##TODO      <row-locking />
+##TODO      <pk-constraint />
+##TODO      <read-ahead />
+##TODO      <list-cache-max />
+            <table-name>$ejb.getTagValue("@ejb-cmp-table")</table-name>
+#foreach( $field in $ejb.cmpFields )
+            <cmp-field>
+                <field-name>$field.name</field-name>
+##TODO          <read-only />
+##TODO          <time-out />
+                <column-name>$field.getTagValue("@ejb-cmp-column")</column-name>
+##TODO          <not-null />
+##TODO          <not-null />
+##TODO          <jdbc-type />
+##TODO          <sql-type />
+            </cmp-field>
+#end##foreach( $field )
+##TODO      <load-groups />
+##TODO      <eager-load-group />
+##TODO      <lazy-load-groups />
+#foreach( $method in $ejb.remoteView.home.methods )
+#if( $method.name.startsWith("find") && $method.name != "findByPrimaryKey" )
+            <finder>
+                <name>$method.name</name>
+                <query><![CDATA[$method.getTagValue("@jboss-cmp-query")]]></query>
+                <order>$!method.getTagValue("@jboss-cmp-query-order")</order>
+            </finder>
+#end##if
+#end##foreach( $method )
+##TODO      <read-ahead />
+##TODO      <read-only />
+##TODO      <tuned-updates />
+##TODO      <create-table />
+##TODO      <remove-table />
+##TODO      <row-locking />
+##TODO      <pk-constraint />
+        </entity>
+#end##if( $ejb.isCmpEntity() )
+#end##foreach( $ejb )
+    </enterprise-beans>
+    <relationships>
+#foreach( $relation in $ejbBundle.relations )
+        <ejb-relation>
+            <ejb-relation-name>$relation.name</ejb-relation-name>
+##TODO      <read-only />
+            <foreign-key-mapping />
+##TODO | relation-table-mapping
+#foreach( $role in $relation.roles )
+            <ejb-relationship-role>
+                <ejb-relationship-role-name>$role.name</ejb-relationship-role-name>
+##TODO          <fk-constraint />
+##TODO          <key-fields />
+##TODO          <read-ahead />
+            </ejb-relationship-role>
+#end##foreach( $role in $relation.roles )
+        </ejb-relation>
+#end##foreach( $relation in $ejbBundle.relations )
+    </relationships>
+##TODO    <dependent-value-classes />
+##TODO    <type-mappings />
+</jbosscmp-jdbc>

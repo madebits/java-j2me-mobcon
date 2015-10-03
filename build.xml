@@ -1,0 +1,527 @@
+<project name="MobCon" default="application" basedir=".">
+  <description>
+      Build file for MobCon
+  </description>
+  
+  <!-- Load properties (APPLICATIONDIR, APPLICATIONNAME, WTKPREVERIFY, WTKEMULATE) -->
+  <property file="default.properties"/>
+    
+  <property name="MOBCONROOTDIR" location="."/>
+  <property name="APPLICATIONROOT" location="${MOBCONROOTDIR}/applications"/>
+  <property name="APPLICATION" location="${APPLICATIONROOT}/${APPLICATIONDIR}"/>
+  <property name="FRAMEWORKROOT" location="${MOBCONROOTDIR}/framework"/>
+  <property name="TRANSFORMERROOT" location="${MOBCONROOTDIR}/transformer"/>
+  <property name="MOBCONLIB" location="${FRAMEWORKROOT}/out/mobcon.jar"/>
+  <property name="MOBCONSERVERROOT" location="${APPLICATION}/demo/server"/>
+  <property name="MOBCONMOBILEROOT" location="${APPLICATION}/demo/mobile"/>
+
+  <path id="framework.compile.classpath">
+    <!--
+    <pathelement path="${java.class.path}/"/>
+    -->
+    <fileset dir="${FRAMEWORKROOT}/lib">
+      <include name="**"/>
+      <include name="**/**"/>
+    </fileset>
+  </path>
+  <property name="framework.compile.classpath.string" refid="framework.compile.classpath"/>
+
+  <!-- MOBRAY -->
+  <property name="MOBRAYAPPLICATION" location="${APPLICATIONROOT}/mobray"/>
+  <property name="MOBRAYAPPLICATIONNAME" value="MobApp"/>
+  <property name="MOBRAYSERVERROOT" location="${MOBRAYAPPLICATION}/demo/server"/>
+  <property name="MOBRAYMOBILEROOT" location="${MOBRAYAPPLICATION}/demo/mobile"/>
+  
+  <path id="mobray.compile.classpath">
+    <pathelement path="${MOBCONLIB}" />
+    <fileset dir="${FRAMEWORKROOT}/lib">
+      <include name="**"/>
+      <include name="**/**"/>
+    </fileset>
+    <fileset dir="${MOBRAYAPPLICATION}/lib">                    
+          <include name="**"/>
+          <include name="*.*"/>
+          <include name="**/**"/>
+          <include name="**/*.*"/>          
+    </fileset>
+  </path>
+  <property name="mobray.compile.classpath.string" refid="mobray.compile.classpath"/>
+  <!-- END MOBRAY -->
+
+  <target name="cleanapp">
+    <delete>
+      <fileset dir="${APPLICATION}/classes">        
+        <include name="**/*.*"/>
+      </fileset>
+    </delete>
+    <delete dir="${APPLICATION}/classes/mobile/bin/output"/>
+    <mkdir dir="${APPLICATION}/classes/mobile/bin/output"/>
+  </target>
+
+
+  <!-- ******************************************** -->
+  <!-- New application dir structure                -->
+  <!-- ******************************************** -->
+  <target name="newapp" depends="newapp.createdir,createmanifest">
+  </target>
+
+  <target name="newapp.createdir">
+    <!-- Create dir-structure for new application -->
+<!--
+    <mkdir dir="${APPLICATION}/classes"/>    
+      <mkdir dir="${APPLICATION}/classes/mobile"/>  
+        <mkdir dir="${APPLICATION}/classes/mobile/app"/>  
+        <mkdir dir="${APPLICATION}/classes/mobile/bin"/>  
+          <mkdir dir="${APPLICATION}/classes/mobile/bin/output"/>  
+      <mkdir dir="${APPLICATION}/classes/server"/>  
+        <mkdir dir="${APPLICATION}/classes/server/app"/>  
+        <mkdir dir="${APPLICATION}/classes/server/output"/>  
+    <mkdir dir="${APPLICATION}/demo"/>    
+      <mkdir dir="${APPLICATION}/demo/mobile"/>  
+      <mkdir dir="${APPLICATION}/classes/server"/>  
+    <mkdir dir="${APPLICATION}/descriptor"/>    
+    <mkdir dir="${APPLICATION}/lib"/>    
+      <mkdir dir="${APPLICATION}/lib/plugins"/>   
+        <mkdir dir="${APPLICATION}/lib/plugins/MixTemplate"/>   
+    <mkdir dir="${APPLICATION}/resources"/>    
+      <mkdir dir="${APPLICATION}/resources/mobile"/>  
+      <mkdir dir="${APPLICATION}/resources/server"/>  
+    <mkdir dir="${APPLICATION}/src"/>    
+      <mkdir dir="${APPLICATION}/src/addsources"/>  
+      <mkdir dir="${APPLICATION}/src/addsources/mobile"/>  
+      <mkdir dir="${APPLICATION}/src/addsources/server"/>  
+      <mkdir dir="${APPLICATION}/src/mobile"/>  
+      <mkdir dir="${APPLICATION}/src/server"/>   
+-->
+    <mkdir dir="${APPLICATION}"/>
+    <copy todir="${APPLICATION}">
+      <fileset dir="${APPLICATIONROOT}/helloworld"/>
+    </copy>
+
+  </target>
+
+  <target name="createmanifest">
+    <manifest file="${APPLICATION}/classes/manifest.mf">
+      <attribute name="MIDlet-Name" value="MobConApp"/>
+      <attribute name="MIDlet-Version" value="2.0"/>
+      <attribute name="MIDlet-Vendor" value="Sun Microsystems, Inc."/>
+    </manifest>
+  </target>
+  
+  <!-- ******************************************** -->
+  <!-- Transformer                                  -->
+  <!-- ******************************************** -->
+  <target name="transformer">
+    <!-- Build the transformer -->
+    <antcall target="transformer.call">
+      <param name="transformer.current" value="dp"/>
+    </antcall>    
+    <antcall target="transformer.call">
+      <param name="transformer.current" value="image"/>
+    </antcall>    
+    <antcall target="transformer.call">
+      <param name="transformer.current" value="log"/>
+    </antcall>    
+    <antcall target="transformer.call">
+      <param name="transformer.current" value="screen"/>
+    </antcall>    
+    <antcall target="transformer.call">
+      <param name="transformer.current" value="session"/>
+    </antcall>    
+    <antcall target="transformer.call">
+      <param name="transformer.current" value="enc"/>
+    </antcall>    
+    <antcall target="transformer.call">
+      <param name="transformer.current" value="ctmixex"/>
+    </antcall>    
+    <antcall target="transformer.call">
+     <param name="transformer.current" value="dbo"/>
+    </antcall>    
+    <copy todir="${APPLICATION}/lib/plugins">
+      <fileset dir="${TRANSFORMERROOT}/out"/>
+    </copy>
+  </target>
+
+  <target name="transformer.call">
+    <!-- Build the transformer -->
+    <echo message="Building transformer ${transformer.current}"/>
+    <jar jarfile="${TRANSFORMERROOT}/out/${transformer.current}.jar" 
+        manifest="${TRANSFORMERROOT}/src/${transformer.current}/MANIFEST.MF" 
+        basedir="${TRANSFORMERROOT}/src/${transformer.current}/jar"/>
+      <fileset dir="${TRANSFORMERROOT}/src/${transformer.current}"/>
+    
+    <java classname="mobcon.app.TagDicParser">
+      <arg path="${TRANSFORMERROOT}/src/${transformer.current}/jar/${transformer.current}.tag"/> 
+      <arg path="${TRANSFORMERROOT}/txt/${transformer.current}.txt"/> 
+      <classpath>        
+        <pathelement path="${MOBCONLIB}" />
+      </classpath>
+    </java>    
+  </target>
+
+
+  <!-- ******************************************** -->
+  <!-- Build the framework                          -->
+  <!-- ******************************************** -->
+  <target name="framework" depends="framework.compile,framework.jar">
+    <!-- Build the framework -->
+  </target>
+
+  <target name="framework.compile">
+    <!-- Clean first -->    
+    <delete>
+      <fileset dir="${FRAMEWORKROOT}/classes">        
+        <include name="**/*.*"/>
+      </fileset>
+    </delete>
+    <delete dir="${FRAMEWORKROOT}/classes/mobcon"/>
+    <mkdir dir="${FRAMEWORKROOT}/classes/mobcon"/>
+
+    <!-- Compile the framework -->
+    <javac srcdir="${FRAMEWORKROOT}/src"
+           destdir="${FRAMEWORKROOT}/classes"
+    >
+        <classpath refid="framework.compile.classpath" />
+    </javac>
+  </target>
+
+  <target name="framework.jar">
+    <!-- Jar the framework -->
+    <jar jarfile="${FRAMEWORKROOT}/out/mobcon.jar"         
+        basedir="${FRAMEWORKROOT}/classes"/>
+  </target>
+
+
+  <!-- ******************************************** -->
+  <!-- Build application server and mobile          -->
+  <!-- ******************************************** -->
+  <target name="application" depends="cleanapp,
+                                application.generate,
+                                application.mobile,
+                                application.server">
+  </target>
+
+
+  <target name="application.mobile" depends="application.mobile.compile,
+                                application.mobile.preverify,
+                                application.mobile.createjar,
+                                application.mobile.createjad">
+  </target>
+
+
+  <target name="application.server" depends="application.server.compile,
+                                application.server.createjar">
+  </target>
+
+
+  <target name="application.generate">      
+      <echo message="Generating..."/>
+    <path id="application.compile.classpath">
+      <pathelement path="${MOBCONLIB}" />
+      <fileset dir="${FRAMEWORKROOT}/lib">
+        <include name="**"/>
+        <include name="**/**"/>
+      </fileset>
+      <fileset dir="${APPLICATION}/lib">                    
+            <include name="**"/>
+            <include name="*.*"/>
+            <include name="**/**"/>
+            <include name="**/*.*"/>          
+      </fileset>
+    </path>
+    <property name="application.compile.classpath.string" refid="application.compile.classpath"/>
+
+      <java dir="${APPLICATION}" fork="true" classname="mobcon.app.Control">
+        <classpath refid="application.compile.classpath"/>
+      </java>    
+  </target>
+
+
+  <!-- ******************************************** -->
+  <!-- Serverside                                   -->
+  <!-- ******************************************** -->
+  <target name="application.server.compile">
+    <!-- Compile the mobile -->
+    <echo message="COMPILING SERVER"/>
+
+    <path id="application.compile.classpath">
+      <pathelement path="${MOBCONLIB}" />
+      <fileset dir="${FRAMEWORKROOT}/lib">
+        <include name="**"/>
+        <include name="**/**"/>
+      </fileset>
+      <fileset dir="${APPLICATION}/lib">                    
+            <include name="**"/>
+            <include name="*.*"/>
+            <include name="**/**"/>
+            <include name="**/*.*"/>          
+      </fileset>
+    </path>
+    <property name="application.compile.classpath.string" refid="application.compile.classpath"/>
+
+    <javac srcdir="${APPLICATION}/classes/server"
+           destdir="${APPLICATION}/classes/server/output">
+      <classpath refid="application.compile.classpath"/>
+    </javac>
+  </target>
+
+  <target name="application.server.createjar">
+    <jar jarfile="${APPLICATION}/classes/server/app/mcserver.jar"         
+        basedir="${APPLICATION}/classes/server/output"/>     
+  </target>
+
+  <target name="application.server.start">
+    <copy file="${APPLICATION}/classes/server/app/mcserver.jar" todir="${MOBCONSERVERROOT}"/>
+    <java dir="${MOBCONSERVERROOT}" fork="true" classname="TestServer">
+      <classpath>          
+        <pathelement path="${MOBCONSERVERROOT}" />
+        <pathelement path="${MOBCONLIB}" />
+        <pathelement path="${framework.compile.classpath}" />
+        <fileset dir="${APPLICATION}/lib">
+          <include name="**"/>
+          <include name="**/**"/>
+        </fileset>
+        <fileset dir="${MOBCONSERVERROOT}">
+          <include name="*.jar"/>
+          <include name="*.zip"/>
+        </fileset>
+      </classpath>
+    </java>    
+    
+  </target>
+
+ 
+  <!-- ******************************************** -->
+  <!-- Mobileside                                   -->
+  <!-- ******************************************** -->
+  <target name="application.mobile.compile">
+    <!-- Compile the mobile -->
+    <echo message="COMPILING MOBILE"/>
+
+    <path id="application.compile.classpath">
+      <pathelement path="${MOBCONLIB}" />
+      <fileset dir="${FRAMEWORKROOT}/lib">
+        <include name="**"/>
+        <include name="**/**"/>
+      </fileset>
+      <fileset dir="${APPLICATION}/lib">                    
+            <include name="**"/>
+            <include name="*.*"/>
+            <include name="**/**"/>
+            <include name="**/*.*"/>          
+      </fileset>
+    </path>
+    <property name="application.compile.classpath.string" refid="application.compile.classpath"/>
+
+    <javac srcdir="${APPLICATION}/classes/mobile"
+           destdir="${APPLICATION}/classes/mobile/bin">
+      <classpath refid="application.compile.classpath"/>          
+    </javac>
+  </target>
+
+  <target name="application.mobile.preverify">    
+    <!-- Preverify the mobile -->   
+    <property name="preverify.path" location="${APPLICATION}/classes/preverify.dat"/>        
+
+    <path id="application.compile.classpath">
+      <pathelement path="${MOBCONLIB}" />
+      <fileset dir="${FRAMEWORKROOT}/lib">
+        <include name="**"/>
+        <include name="**/**"/>
+      </fileset>
+      <fileset dir="${APPLICATION}/lib">                    
+            <include name="**"/>
+            <include name="*.*"/>
+            <include name="**/**"/>
+            <include name="**/*.*"/>          
+      </fileset>
+    </path>
+    <property name="application.compile.classpath.string" refid="application.compile.classpath"/>
+
+    <echo message="Preverify mobile"/>
+    <exec dir="${APPLICATION}/classes/mobile/bin" executable="${WTKPREVERIFY}">            
+      <arg value="-classpath"/>
+      <arg path="${application.compile.classpath.string}"/>
+      <arg value="@${preverify.path}"/>      
+    </exec>
+
+  </target>
+
+  <target name="application.mobile.createjar" depends="createmanifest">
+    <jar jarfile="${APPLICATION}/classes/mobile/app/${APPLICATIONNAME}.jar" 
+        manifest="${APPLICATION}/classes/manifest.mf" 
+        basedir="${APPLICATION}/classes/mobile/bin/output"/>     
+  </target>
+  
+  <target name="application.mobile.createjad">
+    <!-- Preverify the mobile -->
+    <echo message="Creating mobile JAD-File"/>
+    <java classname="mobcon.util.JadCreator">
+      <arg value="${APPLICATIONNAME}"/> 
+      <arg path="${APPLICATION}/classes/mobile/app/${APPLICATIONNAME}.jar"/> 
+      <arg path="${APPLICATION}/classes/mobile/app/${APPLICATIONNAME}.jad"/> 
+      <classpath>        
+        <pathelement path="${MOBCONLIB}" />
+      </classpath>
+    </java>    
+  </target>
+
+  <target name="application.mobile.start">
+    <copy file="${APPLICATION}/classes/mobile/app/${APPLICATIONNAME}.jar" todir="${MOBCONMOBILEROOT}"/>
+    <copy file="${APPLICATION}/classes/mobile/app/${APPLICATIONNAME}.jad" todir="${MOBCONMOBILEROOT}"/>
+    
+    <exec executable="${WTKEMULATE}">            
+      <arg value="-classpath"/>
+      <arg path="${MOBCONMOBILEROOT}/${APPLICATIONNAME}.jar"/>
+      <arg value="-Xdescriptor:${MOBCONMOBILEROOT}/${APPLICATIONNAME}.jad"/>      
+    </exec>
+  </target>
+
+  <!-- ******************************************** -->
+  <!-- ******************************************** -->
+  <!-- MOBRAY Build application server and mobile   -->
+  <!-- ******************************************** -->
+  <!-- ******************************************** -->
+  <target name="mobray" depends="mobray.cleanapp,
+                                mobray.generate,
+                                mobray.mobile,
+                                mobray.server">
+  </target>
+
+
+  <target name="mobray.cleanapp">
+    <delete>
+      <fileset dir="${MOBRAYAPPLICATION}/classes">        
+        <include name="**/*.*"/>
+      </fileset>
+    </delete>
+    <delete dir="${MOBRAYAPPLICATION}/classes/mobile/bin/output"/>
+    <mkdir dir="${MOBRAYAPPLICATION}/classes/mobile/bin/output"/>
+  </target>
+
+  <target name="mobray.mobile" depends="mobray.mobile.compile,
+                                mobray.mobile.preverify,
+                                mobray.mobile.createjar,
+                                mobray.mobile.createjad">
+  </target>
+
+
+  <target name="mobray.server" depends="mobray.server.compile,
+                                mobray.server.createjar">
+  </target>
+
+
+  <target name="mobray.generate">                  
+      <echo message="Generating..."/>
+      <java dir="${MOBRAYAPPLICATION}" fork="true" classname="mobcon.app.Control">
+        <classpath refid="mobray.compile.classpath"/>
+      </java>    
+  </target>
+
+
+  <!-- ******************************************** -->
+  <!-- Serverside MOBRAY                            -->
+  <!-- ******************************************** -->
+
+
+  <target name="mobray.server.compile">
+    <!-- Compile the mobile -->
+    <echo message="COMPILING SERVER"/>
+    <javac srcdir="${MOBRAYAPPLICATION}/classes/server"
+           destdir="${MOBRAYAPPLICATION}/classes/server/output">
+      <classpath refid="mobray.compile.classpath"/>
+    </javac>
+  </target>
+
+  <target name="mobray.server.createjar">
+    <jar jarfile="${MOBRAYAPPLICATION}/classes/server/app/mcserver.jar"         
+        basedir="${MOBRAYAPPLICATION}/classes/server/output"/>     
+  </target>
+
+  <target name="mobray.server.start">
+    <copy file="${MOBRAYAPPLICATION}/classes/server/app/mcserver.jar" todir="${MOBRAYSERVERROOT}"/>
+    <java dir="${MOBRAYSERVERROOT}" fork="true" classname="TestServer">
+      <classpath>          
+        <pathelement path="${MOBRAYSERVERROOT}" />
+        <pathelement path="${MOBCONLIB}" />
+        <pathelement path="${framework.compile.classpath}" />
+        <fileset dir="${MOBRAYAPPLICATION}/lib">
+          <include name="**"/>
+          <include name="**/**"/>
+        </fileset>
+        <fileset dir="${MOBRAYSERVERROOT}">
+          <include name="*.jar"/>
+          <include name="*.zip"/>
+        </fileset>
+      </classpath>
+    </java>    
+    
+  </target>
+
+ 
+  <!-- ******************************************** -->
+  <!-- Mobileside MOBRAY                            -->
+  <!-- ******************************************** -->
+  <target name="mobray.mobile.compile">
+    <!-- Compile the mobile -->
+    <echo message="COMPILING MOBILE"/>
+    <javac srcdir="${MOBRAYAPPLICATION}/classes/mobile"
+           destdir="${MOBRAYAPPLICATION}/classes/mobile/bin">
+      <classpath refid="mobray.compile.classpath"/>          
+    </javac>
+  </target>
+
+  <target name="mobray.mobile.preverify">    
+    <!-- Preverify the mobile -->   
+    <property name="preverify.path" location="${MOBRAYAPPLICATION}/classes/preverify.dat"/>        
+
+    <echo message="Preverify mobile"/>
+    <exec dir="${MOBRAYAPPLICATION}/classes/mobile/bin" executable="${WTKPREVERIFY}">            
+      <arg value="-classpath"/>
+      <arg path="${mobray.compile.classpath.string}"/>
+      <arg value="@${preverify.path}"/>      
+    </exec>
+
+  </target>
+
+  <target name="mobray.createmanifest">
+    <manifest file="${MOBRAYAPPLICATION}/classes/manifest.mf">
+      <attribute name="MIDlet-Name" value="MobConApp"/>
+      <attribute name="MIDlet-Version" value="2.0"/>
+      <attribute name="MIDlet-Vendor" value="Sun Microsystems, Inc."/>
+    </manifest>
+  </target>
+
+  <target name="mobray.mobile.createjar" depends="mobray.createmanifest">
+    <jar jarfile="${MOBRAYAPPLICATION}/classes/mobile/app/${MOBRAYAPPLICATIONNAME}.jar" 
+        manifest="${MOBRAYAPPLICATION}/classes/manifest.mf" 
+        basedir="${MOBRAYAPPLICATION}/classes/mobile/bin/output"/>     
+  </target>
+  
+  <target name="mobray.mobile.createjad">
+    <!-- Preverify the mobile -->
+    <echo message="Creating mobile JAD-File"/>
+    <java classname="mobcon.util.JadCreator">
+      <arg value="${MOBRAYAPPLICATIONNAME}"/> 
+      <arg path="${MOBRAYAPPLICATION}/classes/mobile/app/${MOBRAYAPPLICATIONNAME}.jar"/> 
+      <arg path="${MOBRAYAPPLICATION}/classes/mobile/app/${MOBRAYAPPLICATIONNAME}.jad"/> 
+      <classpath>        
+        <pathelement path="${MOBCONLIB}" />
+      </classpath>
+    </java>    
+  </target>
+
+  <target name="mobray.mobile.start">
+    <copy file="${MOBRAYAPPLICATION}/classes/mobile/app/${MOBRAYAPPLICATIONNAME}.jar" todir="${MOBRAYMOBILEROOT}"/>
+    <copy file="${MOBRAYAPPLICATION}/classes/mobile/app/${MOBRAYAPPLICATIONNAME}.jad" todir="${MOBRAYMOBILEROOT}"/>
+    
+    <exec executable="${WTKEMULATE}">            
+      <arg value="-classpath"/>
+      <arg path="${MOBCONMOBILEROOT}/${MOBRAYAPPLICATIONNAME}.jar"/>
+      <arg value="-Xdescriptor:${MOBRAYMOBILEROOT}/${MOBRAYAPPLICATIONNAME}.jad"/>      
+    </exec>
+  </target>
+
+
+</project>
+

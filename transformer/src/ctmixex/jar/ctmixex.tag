@@ -1,0 +1,9 @@
+# @description =
+# Transformer, that should show how the CT-AST template-mixing works
+# The Transformer generates a field and a method. Later, through mixing, these are
+# changed so that they will "work" with the other transformers
+
+# @addedMethods =
+# - public void doSomething()
+
+PREFIX = @ctmixex

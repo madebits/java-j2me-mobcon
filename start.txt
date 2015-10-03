@@ -1,0 +1,53 @@
+########
+# DOCS #
+########
+
+Description:
+------------
+A mobile container manages common technical concerns and provides them transparently to the components.
+It serves as a wrapper module where other managed components live in, they request technical services 
+from the container or information about its context.
+So Mobile Containers reduce the cost of developing applications because technical concerns need not to 
+be addressed repeatedly, what simplifies the debugging- and designing-processes.
+
+
+GET STARTED WITH MOBRAY:
+------------------------
+1. Change the file "default.properties" to your system-configuration
+- Change APPLICATIONDIR in the file "default.properties" to the directory of your new application
+- Change APPLICATIONNAME in the file "default.properties" to the name of the source-code of the template 
+2. "ant framework", to build the framework
+3. "ant transformer", to build the transformers
+4. "ant mobray" to build the example-application "MobRay"
+5. "ant mobray.server.start" to start a demo-server, that runs the server-side application logic of MobCon
+6. In another window "ant mobray.mobile.start" to start a demo-mobile
+7. Launch the application on mobile
+8. Enter your name and password "pwd"
+9. Test the application
+
+
+USAGE FOR YOUR PROJECTS:
+------------------------
+1. change the file "default.properties" to your system-configuration
+- Change APPLICATIONDIR in the file "default.properties" to the directory of your new application
+- Change APPLICATIONNAME in the file "default.properties" to the name of the source-code of the template 
+2. "ant newapp" to create a directory-structure for your new application in dir APPLICATIONDIR. Application "helloworld" is copied to this directory
+3. "ant framework" compiles and jars the framework
+4. "ant transformer" jars the transformer-plugins, copies them to APPLICATIONDIR/lib/plugins and creates the documentation of the transformers
+5. "ant application" generates, compiles and jars the server- and client-side of the application in APPLICATIONDIR, with name APPLICATIONNAME
+6. (Optional, if a server-side part of your application exists) "ant applicaiton.server.start" to start a demo-server, that runs the server-side application logic of MobCon
+7. In another window "ant application.mobile.start" to start a demo-mobile emulated from WTK
+8. "ant cleanapp" cleans compiled application classes
+
+
+dir-structure:
+--------------
+
+transformer
+|
+|---application (first sample application mobcon)
+|
+|---framework (mobcon source files)
+|
+|---transformers (transformers for technical concerns are here)
+

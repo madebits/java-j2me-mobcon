@@ -1,0 +1,33 @@
+## -*- java -*-
+## @param $ejb EjbInfo
+##
+package ${ejb.remoteView.home.package};
+
+import javax.ejb.EJBException;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.rmi.PortableRemoteObject;
+
+/**
+ * Generated from $ejb.srcClass.name by vDoclet/EJB
+ */
+public interface ${ejb.remoteView.home.shortName} extends javax.ejb.EJBHome {
+#foreach( $method in $ejb.remoteView.home.methods )
+
+#parse( "$templateRoot/method-signature.vm" )
+#end
+
+    //---( JNDI Lookup )---
+
+    final static String JNDI_NAME = "$ejb.remoteView.home.jndiName";
+
+    static class Finder {
+        public static ${ejb.remoteView.home.shortName} narrow( Object home ) {
+            return (${ejb.remoteView.home.shortName}) PortableRemoteObject.narrow( home, ${ejb.remoteView.home.shortName}.class );
+        }
+        public static ${ejb.remoteView.home.shortName} lookup() throws NamingException {
+            return narrow( new InitialContext().lookup(JNDI_NAME) );
+        }
+    }
+
+}

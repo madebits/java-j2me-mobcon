@@ -1,0 +1,70 @@
+## @param vdoclet.docinfo.DocInfo $docInfo
+## @param vdoclet.Generator $vdoclet
+## @param ClassTemplate $CT from Control.vm
+## $docInfo is Class vdoclet.docinfo.DocInfo $docInfo
+## $vdoclet is Class vdoclet.Generator
+##
+#set($StringUtils = $vdoclet.makeBean("org.apache.velocity.util.StringUtils"))
+#set($varMap = $vdoclet.makeBean("java.util.Hashtable"))
+#set($storeVec = $vdoclet.makeBean("java.util.Vector"))
+#set($st = '"')
+##
+#****** Initialize the Dictionary ******#
+#set($tagDic = $transformer.getTagDic())
+
+##If the concern-tag (here @scr) is set, parse the file
+#set($tag = false)
+#set($tag = $class.getTag("$tagDic.getPrefix()"))
+#if ($tag)
+  
+  #set($tag = false)
+  #set($tag = $class.getTag($tagDic.getTag("logMethod")))
+  #if ($tag)
+    #set($logAction = "0")
+
+    #set($logTxt = $tag.value)
+    #if($logTxt == "")
+      #set($logTxt = "${st}METHOD: ${st}")
+    #end
+
+    #set($tag = false)
+    #set($tag = $class.getTag($tagDic.getTag("action")))
+    #if ($tag)
+      #set($logAction = $tag.value)
+    #end
+
+    #foreach($MT in $MAINCT.getMethods())
+        $MT.setTag("$tagDic.getPrefix()")
+        $MT.addBegin("System.out.println($logTxt+${st} $MT.getName() $MT.getTags() ${st});")
+        #if($logAction != "0")
+          $MT.addBegin("$logAction")
+        #end
+    #end
+  #end
+
+  #set($tag = false)
+  #set($tag = $class.getTag($tagDic.getTag("logCommand")))
+  #if ($tag)
+
+    #set($logTxt = $tag.value)
+    #if($logTxt == "")
+      #set($logTxt = "${st}COMMAND: ${st}")
+    #end
+
+    #set($MT = $vdoclet.makeBean("mobcon.ct.MethodTemplate"))
+    $MT.setAccess("public")
+    $MT.setType("void")
+    $MT.setName("commandAction")
+    #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+    $FT.setType("Command")
+    $FT.setName("command")
+    $MT.addParameter($FT)
+    #set($FT = $vdoclet.makeBean("mobcon.ct.FieldTemplate"))
+    $FT.setType("Displayable")
+    $FT.setName("screen")
+    $MT.addParameter($FT)
+    $MT.addBegin("System.out.println($logTxt+${st} '${st}+command.getLabel()+${st}' executed in screen '${st}+screen.getTitle()+${st}'${st});")
+    $CT.addMethod($MT, $tagDic.getPrefix())
+  #end
+## End concern-tag
+#end
